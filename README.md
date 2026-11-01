@@ -37,6 +37,47 @@ Ganchos de venda que já estão no jogo:
 
 ---
 
+# 🚀 Blitz Estelar — jogo de tiro espacial (em `/tiro/`)
+
+Segundo jogo do projeto, servido pelo mesmo servidor: **http://localhost:3000/tiro/**. Roda no navegador do celular e do PC, sem instalar nada. É leve: **cerca de 115 KB no total (35 KB compactado)**, sem bibliotecas, imagens ou arquivos de áudio. A nave, os inimigos, as explosões e a música são gerados por código.
+
+### Por que vicia
+- **Um dedo só**: o tiro é automático, o jogador só arrasta para desviar (no PC: mouse ou WASD, e Espaço para a bomba).
+- **Ondas cada vez mais difíceis**, com 7 tipos de inimigo e **chefe a cada 5 ondas** (5 padrões de tiro).
+- **Escolha 1 de 3 melhorias a cada nível** (tiro múltiplo, mísseis teleguiados, drone, onda de choque, escudo…), então cada partida sai diferente.
+- **Combo multiplicador** de até x5, explosões, tremor de tela e vibração no celular.
+- **Progresso permanente**: 7 naves, 6 melhorias no hangar, recorde de pontos e de onda.
+- **Volta todo dia**: 3 missões diárias mais um baú bônus, e prêmio diário com sequência de 7 dias.
+
+### Como ganha dinheiro
+| Produto (dinheiro real) | Preço | Entrega |
+|---|---|---|
+| **Pacote Piloto** (1x) | R$ 9,90 | 300 💎 + nave Fênix + 5 bombas |
+| Cristais Pequeno | R$ 4,90 | 120 💎 |
+| Cofre de Cristais ⭐ | R$ 19,90 | 650 💎 |
+| Carga de Cristais | R$ 39,90 | 1.500 💎 |
+| Arsenal Lendário | R$ 99,90 | 4.200 💎 + nave Abismo + 15 bombas |
+| **Passe Comandante** (1x) | R$ 14,90 | moedas x2 para sempre + 1 continuar grátis por partida + nave Imperial + sem anúncios |
+
+Os cristais 💎 servem para **continuar depois de morrer** (10 → 20 → 40), **dobrar as moedas da partida**, comprar naves, itens (Largada Turbo, Bombas, Blindagem) e trocar por moedas.
+
+**Anúncios com recompensa (opcional):** com `ADSENSE_CLIENT` no `.env`, o jogador pode assistir a um anúncio para continuar (1x por partida) ou dobrar as moedas. Também aparece um anúncio entre partidas a cada 3 jogos, nunca para quem tem o Passe. A integração usa o **Google AdSense H5 Games Ads**: peça acesso ao programa de jogos H5 na sua conta AdSense e publique o arquivo `ads.txt` no domínio. Sem a chave, no modo demo aparece um anúncio *simulado* para testar o fluxo.
+
+Os pagamentos usam o mesmo PayPal, Pix e painel de vendas do Pulim. Os produtos ficam em `public/tiro/catalog.js` (códigos `nb_...`), e o servidor junta os dois catálogos sozinho. A trava para responsáveis e a recuperação de compras interrompidas também valem aqui.
+
+> 💡 **Portais de jogos** (CrazyGames, Poki, GameDistribution) pagam por anúncio exibido e trazem milhões de jogadores. O Blitz Estelar é um bom candidato: leve, carrega rápido, funciona com mouse e toque. Cada portal tem seu SDK de anúncios e regras sobre compras dentro do jogo, então leia antes de enviar.
+
+### Arquivos
+```
+public/tiro/index.html   Telas
+public/tiro/style.css    Visual neon
+public/tiro/game.js      Motor: naves, inimigos, chefes, melhorias, som sintetizado
+public/tiro/app.js       Menus, hangar, loja, missões, anúncios, pagamentos
+public/tiro/catalog.js   ⭐ Produtos e preços do Blitz Estelar
+```
+
+---
+
 ## 🚀 Rodar no seu computador (5 minutos)
 
 Requisito: [Node.js 18 ou mais novo](https://nodejs.org). Não precisa instalar pacotes.

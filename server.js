@@ -29,6 +29,9 @@ const crypto = require('crypto');
 })();
 
 const CATALOG = require('./public/catalog.js');
+// Catálogo do Blitz Estelar (jogo de tiro em /tiro/). Os códigos começam com "nb_".
+const TIRO_CATALOG = require('./public/tiro/catalog.js');
+const PRODUCTS = Object.assign({}, CATALOG.products, TIRO_CATALOG.products);
 const PORT = Number(process.env.PORT) || 3000;
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || '';
@@ -38,6 +41,9 @@ const PAYPAL_API =
     : 'https://api-m.sandbox.paypal.com';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
+// Google AdSense (anúncios com recompensa no Blitz Estelar). Ex.: ca-pub-1234567890123456
+const ADSENSE_CLIENT = /^ca-pub-\d+$/.test(process.env.ADSENSE_CLIENT || '') ? process.env.ADSENSE_CLIENT : null;
+const ADSENSE_TEST = process.env.ADSENSE_TEST === 'true';
 // Google Play (app Android)
 const GP_PACKAGE = process.env.GOOGLE_PLAY_PACKAGE || 'br.com.coopercloud.pulim';
 const GP_SHA256 = (process.env.TWA_SHA256_FINGERPRINTS || '').split(',').map((x) => x.trim()).filter(Boolean);
@@ -91,7 +97,7 @@ function recordPurchase(p) {
 }
 
 function product(sku) {
-  return Object.prototype.hasOwnProperty.call(CATALOG.products, sku) ? CATALOG.products[sku] : null;
+  return Object.prototype.hasOwnProperty.call(PRODUCTS, sku) ? PRODUCTS[sku] : null;
 }
 const money = (n) => Number(n).toFixed(2);
 
@@ -122,11 +128,11 @@ async function paypalCreateOrder(sku) {
       purchase_units: [
         {
           custom_id: sku,
-          description: `Pulim - ${p.name}`,
+          description: `${p.game || 'Pulim'} - ${p.name}`,
           amount: { currency_code: CATALOG.currency, value: money(p.price) },
         },
       ],
-      application_context: { brand_name: 'Pulim', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW' },
+      application_context: { brand_name: p.game || 'Pulim', shipping_preference: 'NO_SHIPPING', user_action: 'PAY_NOW' },
     }),
   });
   const j = await r.json();
@@ -173,7 +179,7 @@ async function pixCreate(sku, email) {
     },
     body: JSON.stringify({
       transaction_amount: Number(money(p.price)),
-      description: `Pulim - ${p.name}`,
+      description: `${p.game || 'Pulim'} - ${p.name}`,
       payment_method_id: 'pix',
       external_reference: sku,
       payer: { email },
@@ -317,7 +323,7 @@ function fillCompany(html) {
 
 function serveStatic(req, res, pathname) {
   let rel = decodeURIComponent(pathname);
-  if (rel === '/') rel = '/index.html';
+  if (rel.endsWith('/')) rel += 'index.html';
   const file = path.normalize(path.join(PUBLIC_DIR, rel));
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return send(res, 403, 'Proibido', 'text/plain');
   fs.readFile(file, (err, buf) => {
@@ -338,6 +344,8 @@ const server = http.createServer(async (req, res) => {
         pix: PIX_ENABLED,
         googlePlay: GP_ENABLED,
         currency: CATALOG.currency,
+        adsense: ADSENSE_CLIENT,
+        adsenseTest: ADSENSE_TEST,
       });
     }
     if (p === '/api/paypal/orders' && req.method === 'POST') {
@@ -400,6 +408,10 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { vendas: purchases.length, receitaTotal: money(total), porProduto: bySku, ultimas: purchases.slice(-20).reverse() });
     }
     if (p.startsWith('/api/')) throw httpError(404, 'Rota não encontrada');
+    if (p === '/tiro') {
+      res.writeHead(301, { Location: '/tiro/' + url.search });
+      return res.end();
+    }
     if (req.method !== 'GET' && req.method !== 'HEAD') throw httpError(405, 'Método não permitido');
     return serveStatic(req, res, p);
   } catch (e) {
@@ -410,6 +422,8 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`🎮 Pulim rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Blitz Estelar (tiro) em http://localhost:${PORT}/tiro/`);
+  console.log(`   AdSense (anúncios com recompensa): ${ADSENSE_CLIENT ? 'ATIVO' : 'desligado'}`);
   console.log(`   PayPal: ${PAYPAL_ENABLED ? 'ATIVO (' + PAYPAL_API + ')' : 'desligado'}`);
   console.log(`   Pix (Mercado Pago): ${PIX_ENABLED ? 'ATIVO' : 'desligado'}`);
   console.log(`   Google Play Billing: ${GP_ENABLED ? 'ATIVO (' + GP_PACKAGE + ')' : 'desligado'}`);

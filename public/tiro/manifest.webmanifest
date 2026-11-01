@@ -1,0 +1,17 @@
+{
+  "id": "/tiro/",
+  "name": "Blitz Estelar — Tiro Espacial",
+  "short_name": "Blitz Estelar",
+  "description": "Destrua ondas de naves, derrote chefes e evolua sua nave.",
+  "lang": "pt-BR",
+  "start_url": "/tiro/?src=pwa",
+  "scope": "/tiro/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#03040f",
+  "theme_color": "#03040f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
