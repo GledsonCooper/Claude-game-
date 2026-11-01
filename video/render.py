@@ -6,7 +6,7 @@ Requer em <pasta_build>: timeline.json, narracao.wav, musica.wav, legendas.srt
 import json, math, os, subprocess, sys
 from multiprocessing import Pool
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paisagens as P
@@ -221,6 +221,71 @@ Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
 VIG = (1 - 0.38 * np.clip(((X - W / 2) / (W * 0.62)) ** 2 + ((Y - H / 2) / (H * 0.7)) ** 2, 0, 1) ** 1.3)[..., None]
 SUB_Y = H - 260 - 30
 
+# ---------------------------------------------------------------- fotos do casal (cartões com moldura)
+FOTOS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fotos")
+# fotos por parágrafo (nomes em video/fotos/, que fica fora do git por privacidade)
+FOTOS = [["06", "12"], ["13", "10", "18"], ["08", "16", "11"], ["05", "04", "03"],
+         ["15", "14"], ["01"], ["17"], ["02"], ["07"]]
+CROP_BOTTOM = {"01": 0.07}  # remove a marca d'água do celular
+PHOTO_FADE = 0.9
+SLOTS = []
+for pi, names in enumerate(FOTOS):
+    a, b = BOUNDS[pi], BOUNDS[pi + 1]
+    if pi == len(FOTOS) - 1:
+        b = DUR - 1.0
+    step = (b - a) / len(names)
+    for k, nm in enumerate(names):
+        SLOTS.append((nm, a + k * step - PHOTO_FADE / 2, a + (k + 1) * step + PHOTO_FADE / 2, len(SLOTS)))
+_card_cache = {}
+
+
+def card(nm, idx):
+    """Foto com moldura branca, sombra suave e leve inclinação, como RGBA float."""
+    if nm in _card_cache:
+        return _card_cache[nm]
+    im = ImageOps.exif_transpose(Image.open(f"{FOTOS_DIR}/{nm}.jpg")).convert("RGB")
+    if nm in CROP_BOTTOM:
+        im = im.crop((0, 0, im.width, int(im.height * (1 - CROP_BOTTOM[nm]))))
+    im.thumbnail((1400, 740), Image.LANCZOS)
+    bord = 14
+    framed = Image.new("RGB", (im.width + 2 * bord, im.height + 2 * bord), (250, 247, 240))
+    framed.paste(im, (bord, bord))
+    pad = 50
+    canvas = Image.new("RGBA", (framed.width + 2 * pad, framed.height + 2 * pad), (0, 0, 0, 0))
+    sh = Image.new("L", canvas.size, 0)
+    ImageDraw.Draw(sh).rectangle([pad + 6, pad + 14, pad + framed.width + 6, pad + framed.height + 14], fill=150)
+    sh = sh.filter(ImageFilter.GaussianBlur(18))
+    canvas.putalpha(sh)
+    canvas.paste(framed, (pad, pad))
+    ang = (-1.6, 1.2, -0.8, 1.5)[idx % 4]
+    canvas = canvas.rotate(ang, resample=Image.BICUBIC, expand=True)
+    _card_cache[nm] = canvas
+    return canvas
+
+
+def draw_photos(f, t):
+    for nm, a, b, idx in SLOTS:
+        if not (a <= t < b):
+            continue
+        al = min(1.0, (t - a) / PHOTO_FADE, (b - t) / PHOTO_FADE)
+        al = ease(al)
+        if al <= 0:
+            continue
+        c = card(nm, idx)
+        p = (t - a) / (b - a)
+        sc = 0.97 + 0.05 * p
+        w, h = int(c.width * sc), int(c.height * sc)
+        im = np.asarray(c.resize((w, h), Image.BILINEAR)).astype(np.float32) / 255
+        cx = W / 2 + (1 if idx % 2 else -1) * 10 * (p - 0.5)
+        cy = 430 - 6 * (p - 0.5)
+        x0, y0 = int(cx - w / 2), int(cy - h / 2)
+        sx0, sy0 = max(0, -x0), max(0, -y0)
+        x1, y1 = min(W, x0 + w), min(H, y0 + h)
+        reg = im[sy0:sy0 + (y1 - max(0, y0)), sx0:sx0 + (x1 - max(0, x0))]
+        a4 = reg[..., 3:4] * al
+        dst = f[max(0, y0):y1, max(0, x0):x1]
+        f[max(0, y0):y1, max(0, x0):x1] = dst * (1 - a4) + reg[..., :3] * a4
+
 
 def render_scene(i, t):
     bg, meta = scene(i)
@@ -259,6 +324,7 @@ def frame_at(n):
         f = render_scene(i - 1, t) * (1 - a) + f * a
     f = f * VIG
     f = np.clip(f, 0, 1)
+    draw_photos(f, t)
     # entrada/saída em preto
     g = min(1.0, t / 2.0, (DUR - t) / 3.0)
     f = f * max(g, 0)

@@ -12,3 +12,5 @@ android/gradle*
 android/*.aab
 android/*.apk
 service-account*.json
+fotos/
+video/*-fotos.mp4
