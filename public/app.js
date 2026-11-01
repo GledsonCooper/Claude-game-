@@ -31,8 +31,20 @@
   Sound.on = S.sound;
 
   // ---------------- Configuração do servidor ----------------
-  let CONFIG = { demo: true, paypal: null, pix: false, offline: true };
-  fetch('/api/config').then((r) => r.ok ? r.json() : Promise.reject()).then((c) => { CONFIG = c; recoverPending(); }).catch(() => {});
+  let CONFIG = { demo: true, paypal: null, pix: false, googlePlay: false, offline: true };
+  fetch('/api/config').then((r) => r.ok ? r.json() : Promise.reject()).then((c) => { CONFIG = c; recoverPending(); initPlay(); }).catch(() => {});
+
+  // Rodando dentro do app Android da Play Store? (o app abre o site com ?src=twa)
+  const IN_PLAY = (function () {
+    const fromApp = document.referrer.indexOf('android-app://') === 0;
+    try {
+      if (new URLSearchParams(location.search).get('src') === 'twa' || fromApp) sessionStorage.setItem('pulim_twa', '1');
+      return sessionStorage.getItem('pulim_twa') === '1';
+    } catch (e) { return fromApp || location.search.indexOf('src=twa') >= 0; }
+  })();
+  let playService = null;
+  const playPrices = {};
+  function priceLabel(sku) { return playPrices[sku] || fmtBRL(CAT.products[sku].price); }
 
   // ---------------- Itens consumíveis ----------------
   const ITEMS = [
@@ -74,6 +86,7 @@
   function renderMenu() {
     $('bestScore').textContent = S.best + 'm';
     $('btnStarter').classList.toggle('hidden', !!S.bought.starter);
+    $('btnStarter').querySelector('span').textContent = priceLabel('starter');
     $('btnDaily').classList.toggle('ready', dailyReady());
     $('btnSound').textContent = S.sound ? '🔊 Som: ligado' : '🔇 Som: desligado';
     if (!boostsRow) {
@@ -256,7 +269,7 @@
         badge.textContent = 'EXCLUSIVO';
         card.appendChild(badge);
         btn.className = 'btn primary';
-        btn.textContent = fmtBRL(p.price);
+        btn.textContent = priceLabel(s.price.iap);
         const sub = document.createElement('div');
         sub.className = 'sub';
         sub.textContent = 'Vem no ' + p.name;
@@ -310,7 +323,7 @@
         <div class="info"><div class="name">${p.name}</div><div class="sub">${p.desc}</div></div>`;
       const btn = document.createElement('button');
       btn.className = 'btn primary';
-      btn.textContent = owned ? '✓ Comprado' : fmtBRL(p.price);
+      btn.textContent = owned ? '✓ Comprado' : priceLabel(sku);
       btn.disabled = !!owned;
       btn.onclick = () => buy(sku);
       card.appendChild(btn);
@@ -424,18 +437,27 @@
     $('checkout').classList.remove('hidden');
     $('payTitle').textContent = p.name;
     $('payDesc').textContent = p.desc;
-    $('payPrice').textContent = fmtBRL(p.price);
+    $('payPrice').textContent = priceLabel(currentSku);
     $('pixForm').classList.remove('hidden');
     $('pixResult').classList.add('hidden');
 
-    const hasPP = !!CONFIG.paypal, hasPix = !!CONFIG.pix;
-    const demo = CONFIG.demo || (!hasPP && !hasPix);
+    // Dentro do app da Play Store só o Google Play Billing é permitido.
+    const hasPP = !IN_PLAY && !!CONFIG.paypal, hasPix = !IN_PLAY && !!CONFIG.pix;
+    const hasGP = IN_PLAY && !!CONFIG.googlePlay;
+    const demo = CONFIG.demo && !hasGP;
     $('pay-demo').classList.toggle('hidden', !demo);
-    $('payTabs').classList.toggle('hidden', demo || !(hasPP && hasPix));
-    if (demo) {
+    $('pay-play').classList.toggle('hidden', demo || !IN_PLAY);
+    $('payTabs').classList.toggle('hidden', demo || IN_PLAY || !(hasPP && hasPix));
+    if (demo || IN_PLAY) {
       $('pay-paypal').classList.add('hidden');
       $('pay-pix').classList.add('hidden');
+      if (IN_PLAY && !demo && !playService) payMsg('A loja do Google Play não está disponível neste aparelho. Atualize a Play Store e tente de novo.', 'err');
       return;
+    }
+    if (!hasPP && !hasPix) {
+      $('pay-paypal').classList.add('hidden');
+      $('pay-pix').classList.add('hidden');
+      return payMsg('Pagamentos indisponíveis no momento.', 'err');
     }
     setPayTab(hasPP ? 'paypal' : 'pix');
     if (hasPP) renderPayPal();
@@ -459,8 +481,9 @@
     return j;
   }
 
-  function grant(res) {
+  function grant(res, token) {
     if (!res || !res.ok) return false;
+    if (token) S.pending = S.pending.filter((x) => x.id !== token);
     if (S.txs.includes(res.txId)) return true; // já entregue
     const g = res.grant || {};
     if (g.gems) S.gems += g.gems;
@@ -475,8 +498,8 @@
     Sound.buy();
     return true;
   }
-  function success(res) {
-    grant(res);
+  function success(res, token) {
+    grant(res, token);
     payMsg('✅ Pagamento aprovado! Itens entregues.', 'ok');
     toast('🎉 Obrigado pela compra! Itens entregues.', 3500);
     setTimeout(() => {
@@ -571,8 +594,11 @@
     if (!S.pending.length) return;
     for (const p of S.pending.slice()) {
       try {
-        const res = p.type === 'paypal' ? await api(`/api/paypal/orders/${p.id}/capture`, {}) : await api('/api/pix/' + p.id);
-        if (res.ok) { grant(res); toast('🎁 Compra anterior entregue!'); }
+        let res;
+        if (p.type === 'gp') { if (!CONFIG.googlePlay) continue; res = await api('/api/googleplay/verify', { sku: p.sku, token: p.id }); }
+        else if (p.type === 'paypal') res = await api(`/api/paypal/orders/${p.id}/capture`, {});
+        else res = await api('/api/pix/' + p.id);
+        if (res.ok) { grant(res, p.id); toast('🎁 Compra anterior entregue!'); }
         else if (['rejected', 'cancelled', 'expired', 'VOIDED', 'DECLINED'].includes(res.status) || (p.at && Date.now() - p.at > 864e5)) {
           S.pending = S.pending.filter((x) => x !== p);
           save();
@@ -580,6 +606,51 @@
       } catch (e) { /* tenta na próxima visita */ }
     }
   }
+
+  // Google Play Billing (Digital Goods API + Payment Request, disponível no app Android)
+  async function initPlay() {
+    if (!IN_PLAY || !CONFIG.googlePlay || !('getDigitalGoodsService' in window)) return;
+    try {
+      playService = await window.getDigitalGoodsService('https://play.google.com/billing');
+      const details = await playService.getDetails(Object.keys(CAT.products));
+      details.forEach((d) => {
+        playPrices[d.itemId] = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: d.price.currency }).format(Number(d.price.value));
+      });
+      if (!$('menu').classList.contains('hidden')) renderMenu();
+      // Restaura compras: itens únicos (após reinstalar) e gemas pagas que não chegaram a ser entregues.
+      const owned = await playService.listPurchases();
+      for (const pur of owned) {
+        try {
+          const res = await api('/api/googleplay/verify', { sku: pur.itemId, token: pur.purchaseToken });
+          if (res.ok && !S.txs.includes(res.txId)) { grant(res, pur.purchaseToken); toast('🎁 Compra restaurada!'); }
+        } catch (e) { /* tenta na próxima abertura */ }
+      }
+    } catch (e) { playService = null; }
+  }
+  $('playBuy').onclick = async () => {
+    if (!playService) return payMsg('A loja do Google Play não está disponível neste aparelho.', 'err');
+    const sku = currentSku;
+    try {
+      const req = new PaymentRequest(
+        [{ supportedMethods: 'https://play.google.com/billing', data: { sku } }],
+        { total: { label: 'Total', amount: { currency: CAT.currency, value: '0' } } } // valor real vem do Play Console
+      );
+      const resp = await req.show();
+      const token = resp.details.purchaseToken;
+      S.pending.push({ type: 'gp', id: token, sku, at: Date.now() });
+      save();
+      payMsg('Confirmando pagamento…');
+      const res = await api('/api/googleplay/verify', { sku, token });
+      await resp.complete(res.ok ? 'success' : 'fail');
+      if (res.ok) success(res, token);
+      else payMsg(res.status === 'PENDING' ? 'Pagamento pendente. O item chega assim que for aprovado.' : 'Pagamento não concluído.', 'err');
+    } catch (e) {
+      if (e && e.name === 'AbortError') payMsg('Compra cancelada.');
+      else payMsg('Não foi possível concluir. Tente novamente.', 'err');
+    }
+  };
+
+  if (IN_PLAY) $('shopFine').textContent = 'Pagamento seguro pelo Google Play. Itens são entregues na hora. Menores de idade: peça permissão a um responsável.';
 
   // ---------------- Início ----------------
   show('menu');

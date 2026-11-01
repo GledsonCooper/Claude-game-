@@ -1,6 +1,8 @@
 # 🎮 Pulim — Rumo às Nuvens
 
-Jogo web casual (roda em qualquer navegador, celular ou PC, sem instalar nada) com **loja integrada que vende itens por dinheiro real** via **PayPal (cartão/saldo PayPal)** e **Pix (Mercado Pago)**.
+Jogo web casual (roda em qualquer navegador, celular ou PC, sem instalar nada) com **loja integrada que vende itens por dinheiro real** via **PayPal (cartão/saldo PayPal)** e **Pix (Mercado Pago)** no site, e **Google Play Billing** no app Android.
+
+> 📱 **Play Store:** o guia completo para publicar pela Cooper Cloud está em [`PLAY_STORE.md`](PLAY_STORE.md). Os textos e imagens da ficha estão na pasta [`store/`](store/).
 
 O jogador controla o Pulim, que pula de nuvem em nuvem o mais alto que conseguir, coleta moedas, foge de nuvens de tempestade e desbloqueia personagens. Partidas de 1 a 3 minutos, um controle só (esquerda/direita) e visual fofo. Serve para criança, adolescente, adulto e para o "jogo rápido no celular" de quem tem 40+.
 
@@ -130,7 +132,13 @@ public/style.css       Visual
 public/game.js         Motor do jogo (física, fases, personagens desenhados por código)
 public/app.js          Menus, progresso salvo, loja, PayPal, Pix, prêmio diário
 public/catalog.js      ⭐ Produtos e preços. Edite aqui para mudar valores
+public/privacidade.html, termos.html   Páginas legais (CNPJ e e-mail vêm do .env)
 .env.example           Modelo de configuração dos pagamentos
+render.yaml            Deploy em 1 clique no Render.com
+PLAY_STORE.md          Guia de publicação na Google Play
+android/               Configuração do app Android (Bubblewrap/TWA)
+store/                 Ícone, banner, capturas de tela e textos da Play Store
+tools/gerar-imagens.js Gera ícones e capturas de tela de novo, se o visual mudar
 ```
 
 O progresso do jogador fica salvo no navegador dele (localStorage).

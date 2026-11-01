@@ -2,3 +2,13 @@ node_modules/
 .env
 data/*.json
 !data/.gitkeep
+# Chave de assinatura do app Android: NUNCA envie para o GitHub. Guarde um backup seguro.
+*.keystore
+*.jks
+android/app/
+android/build/
+android/.gradle/
+android/gradle*
+android/*.aab
+android/*.apk
+service-account*.json

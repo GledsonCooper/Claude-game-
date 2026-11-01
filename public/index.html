@@ -9,6 +9,7 @@
   <meta property="og:title" content="Pulim — Rumo às Nuvens">
   <meta property="og:description" content="Quanto alto você consegue pular? Jogo grátis, direto no navegador.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -47,6 +48,7 @@
     <button class="btn daily" id="btnDaily">🎁 Prêmio diário</button>
     <div class="tips">PC: ← → ou A/D &nbsp;•&nbsp; Celular: toque nos lados da tela</div>
     <button class="link" id="btnSound">🔊 Som: ligado</button>
+    <div class="legal"><a href="privacidade.html">Privacidade</a> · <a href="termos.html">Termos de uso</a></div>
   </section>
 
   <!-- PAUSA -->
@@ -89,7 +91,7 @@
     </div>
     <div class="tab-body" id="tab-gems"></div>
     <div class="tab-body hidden" id="tab-items"></div>
-    <p class="fine">Pagamento seguro via PayPal (cartão) ou Pix. Itens são entregues na hora.<br>Menores de idade: peça permissão a um responsável.</p>
+    <p class="fine" id="shopFine">Pagamento seguro via PayPal (cartão) ou Pix. Itens são entregues na hora.<br>Menores de idade: peça permissão a um responsável.</p>
   </section>
 
   <!-- PRÊMIO DIÁRIO -->
@@ -131,6 +133,9 @@
             <button class="btn" id="pixCopy">📋 Copiar código Pix</button>
             <p class="waiting">⏳ Aguardando pagamento… pague no app do seu banco e o item chega aqui automaticamente.</p>
           </div>
+        </div>
+        <div id="pay-play" class="hidden">
+          <button class="btn big primary" id="playBuy">Comprar com Google Play</button>
         </div>
         <div id="pay-demo" class="hidden">
           <p class="demo-note">🧪 MODO DEMO — nenhuma cobrança real. Configure PayPal/Pix no servidor para vender.</p>

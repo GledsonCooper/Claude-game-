@@ -5,8 +5,9 @@
  *   node server.js
  *
  * Pagamentos suportados (configure no arquivo .env — veja .env.example):
- *   - PayPal (cartão de crédito/débito e saldo PayPal, no mundo todo)
- *   - Pix via Mercado Pago (Brasil, aprovação instantânea)
+ *   - PayPal (cartão de crédito/débito e saldo PayPal, no mundo todo)   -> versão site
+ *   - Pix via Mercado Pago (Brasil, aprovação instantânea)              -> versão site
+ *   - Google Play Billing (obrigatório dentro do app da Play Store)     -> versão Android
  * Sem chaves configuradas, o servidor roda em MODO DEMO (compras de teste grátis).
  */
 const http = require('http');
@@ -37,11 +38,33 @@ const PAYPAL_API =
     : 'https://api-m.sandbox.paypal.com';
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || '';
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
+// Google Play (app Android)
+const GP_PACKAGE = process.env.GOOGLE_PLAY_PACKAGE || 'br.com.coopercloud.pulim';
+const GP_SHA256 = (process.env.TWA_SHA256_FINGERPRINTS || '').split(',').map((x) => x.trim()).filter(Boolean);
+const GP_SERVICE_ACCOUNT = loadServiceAccount();
+const GP_ENABLED = Boolean(GP_SERVICE_ACCOUNT);
 const PAYPAL_ENABLED = Boolean(PAYPAL_CLIENT_ID && PAYPAL_CLIENT_SECRET);
 const PIX_ENABLED = Boolean(MP_ACCESS_TOKEN);
 const DEMO =
   process.env.DEMO_PURCHASES === 'true' ||
-  (process.env.DEMO_PURCHASES !== 'false' && !PAYPAL_ENABLED && !PIX_ENABLED);
+  (process.env.DEMO_PURCHASES !== 'false' && !PAYPAL_ENABLED && !PIX_ENABLED && !GP_ENABLED);
+
+function loadServiceAccount() {
+  // Aceita o JSON da conta de serviço como caminho de arquivo, JSON puro ou base64.
+  const v = process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
+  if (!v) return null;
+  try {
+    let txt = v.trim();
+    if (!txt.startsWith('{')) {
+      txt = fs.existsSync(txt) ? fs.readFileSync(txt, 'utf8') : Buffer.from(txt, 'base64').toString('utf8');
+    }
+    const j = JSON.parse(txt);
+    return j.client_email && j.private_key ? j : null;
+  } catch (e) {
+    console.error('GOOGLE_SERVICE_ACCOUNT_JSON inválido:', e.message);
+    return null;
+  }
+}
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_FILE = path.join(__dirname, 'data', 'purchases.json');
@@ -178,6 +201,62 @@ async function pixStatus(id) {
   return { ok: true, sku, grant: p.grant, txId: 'pix_' + id };
 }
 
+
+// ---------- Google Play Billing ----------
+let gpToken = { value: '', exp: 0 };
+async function googleToken() {
+  if (gpToken.value && Date.now() < gpToken.exp) return gpToken.value;
+  const now = Math.floor(Date.now() / 1000);
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const unsigned =
+    b64({ alg: 'RS256', typ: 'JWT' }) +
+    '.' +
+    b64({
+      iss: GP_SERVICE_ACCOUNT.client_email,
+      scope: 'https://www.googleapis.com/auth/androidpublisher',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    });
+  const sig = crypto.createSign('RSA-SHA256').update(unsigned).sign(GP_SERVICE_ACCOUNT.private_key).toString('base64url');
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: unsigned + '.' + sig }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error('Google auth: ' + JSON.stringify(j));
+  gpToken = { value: j.access_token, exp: Date.now() + (j.expires_in - 60) * 1000 };
+  return gpToken.value;
+}
+
+async function googlePlayVerify(sku, token) {
+  const p = product(sku);
+  if (!p) throw httpError(400, 'Produto inválido');
+  if (typeof token !== 'string' || !/^[\w.\-]{10,600}$/.test(token)) throw httpError(400, 'Token inválido');
+  const base = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(GP_PACKAGE)}/purchases/products/${encodeURIComponent(sku)}/tokens/${encodeURIComponent(token)}`;
+  const headers = { Authorization: `Bearer ${await googleToken()}`, 'Content-Type': 'application/json' };
+  const r = await fetch(base, { headers });
+  const j = await r.json();
+  if (!r.ok) throw new Error('Google Play verify: ' + JSON.stringify(j));
+  // purchaseState: 0 = comprado, 1 = cancelado, 2 = pendente
+  if (j.purchaseState !== 0) return { ok: false, status: ['PURCHASED', 'CANCELLED', 'PENDING'][j.purchaseState] || 'UNKNOWN' };
+  // Itens de compra única são "reconhecidos"; gemas são "consumidas" (podem ser compradas de novo).
+  // Sem isso o Google reembolsa a compra automaticamente em 3 dias.
+  if (p.oncePerPlayer) {
+    if (j.acknowledgementState === 0) {
+      const a = await fetch(base + ':acknowledge', { method: 'POST', headers, body: '{}' });
+      if (!a.ok) throw new Error('Google Play acknowledge: ' + (await a.text()));
+    }
+  } else if (j.consumptionState === 0) {
+    const c = await fetch(base + ':consume', { method: 'POST', headers });
+    if (!c.ok) throw new Error('Google Play consume: ' + (await c.text()));
+  }
+  const txId = j.orderId || token.slice(0, 40);
+  recordPurchase({ provider: 'googleplay', txId, sku, amount: money(p.price) });
+  return { ok: true, sku, grant: p.grant, txId: 'gp_' + txId };
+}
+
 // ---------- HTTP ----------
 function httpError(status, message) {
   const e = new Error(message);
@@ -220,9 +299,21 @@ const MIME = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.txt': 'text/plain; charset=utf-8',
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json',
 };
+
+// Preenche os dados da empresa nas páginas legais a partir do .env
+const COMPANY = {
+  '[PREENCHER CNPJ]': process.env.COMPANY_CNPJ,
+  '[PREENCHER ENDEREÇO]': process.env.COMPANY_ADDRESS,
+  '[PREENCHER E-MAIL DE SUPORTE]': process.env.SUPPORT_EMAIL,
+};
+function fillCompany(html) {
+  for (const [k, v] of Object.entries(COMPANY)) if (v) html = html.split(k).join(v.replace(/[<>&"]/g, ''));
+  return html;
+}
 
 function serveStatic(req, res, pathname) {
   let rel = decodeURIComponent(pathname);
@@ -231,6 +322,7 @@ function serveStatic(req, res, pathname) {
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return send(res, 403, 'Proibido', 'text/plain');
   fs.readFile(file, (err, buf) => {
     if (err) return send(res, 404, 'Não encontrado', 'text/plain; charset=utf-8');
+    if (file.endsWith('.html')) buf = fillCompany(buf.toString('utf8'));
     send(res, 200, buf, MIME[path.extname(file)] || 'application/octet-stream');
   });
 }
@@ -244,6 +336,7 @@ const server = http.createServer(async (req, res) => {
         demo: DEMO,
         paypal: PAYPAL_ENABLED ? { clientId: PAYPAL_CLIENT_ID } : null,
         pix: PIX_ENABLED,
+        googlePlay: GP_ENABLED,
         currency: CATALOG.currency,
       });
     }
@@ -265,6 +358,20 @@ const server = http.createServer(async (req, res) => {
     if ((m = p.match(/^\/api\/pix\/([^/]+)$/)) && req.method === 'GET') {
       if (!PIX_ENABLED) throw httpError(503, 'Pix não configurado');
       return send(res, 200, await pixStatus(m[1]));
+    }
+    if (p === '/api/googleplay/verify' && req.method === 'POST') {
+      if (!GP_ENABLED) throw httpError(503, 'Google Play não configurado');
+      const { sku, token } = await readJson(req);
+      return send(res, 200, await googlePlayVerify(sku, token));
+    }
+    if (p === '/.well-known/assetlinks.json' && req.method === 'GET') {
+      // Prova para o Android que este site pertence ao app (necessário para o app abrir sem barra de endereço).
+      return send(res, 200, [
+        {
+          relation: ['delegate_permission/common.handle_all_urls'],
+          target: { namespace: 'android_app', package_name: GP_PACKAGE, sha256_cert_fingerprints: GP_SHA256 },
+        },
+      ]);
     }
     if (p === '/api/demo/purchase' && req.method === 'POST') {
       if (!DEMO) throw httpError(403, 'Modo demo desligado');
@@ -305,5 +412,7 @@ server.listen(PORT, () => {
   console.log(`🎮 Pulim rodando em http://localhost:${PORT}`);
   console.log(`   PayPal: ${PAYPAL_ENABLED ? 'ATIVO (' + PAYPAL_API + ')' : 'desligado'}`);
   console.log(`   Pix (Mercado Pago): ${PIX_ENABLED ? 'ATIVO' : 'desligado'}`);
+  console.log(`   Google Play Billing: ${GP_ENABLED ? 'ATIVO (' + GP_PACKAGE + ')' : 'desligado'}`);
+  if (!GP_SHA256.length) console.log('   (TWA_SHA256_FINGERPRINTS vazio: o app Android vai mostrar a barra de endereço)');
   if (DEMO) console.log('   ⚠️  MODO DEMO: compras são gratuitas (configure o .env para vender de verdade)');
 });
