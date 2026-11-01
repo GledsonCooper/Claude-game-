@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pulim — Rumo às Nuvens</title>
+  <meta name="description" content="Pule de nuvem em nuvem, colete moedas e desbloqueie personagens incríveis! Jogo grátis no navegador.">
+  <meta name="theme-color" content="#5b8cff">
+  <meta property="og:title" content="Pulim — Rumo às Nuvens">
+  <meta property="og:description" content="Quanto alto você consegue pular? Jogo grátis, direto no navegador.">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <div class="score" id="hudScore">0</div>
+      <div class="hud-coins">🪙 <span id="hudCoins">0</span></div>
+    </div>
+    <button class="icon-btn" id="btnPause" aria-label="Pausar">⏸</button>
+  </div>
+
+  <!-- Barra de moedas (menus) -->
+  <div id="wallet" class="wallet">
+    <div class="pill">🪙 <span id="wCoins">0</span></div>
+    <button class="pill gems" id="wGems">💎 <span id="wGemsN">0</span> <b>+</b></button>
+  </div>
+
+  <!-- MENU -->
+  <section id="menu" class="screen">
+    <div class="logo">
+      <h1>Pulim</h1>
+      <p>Rumo às Nuvens</p>
+    </div>
+    <canvas id="menuPreview" width="160" height="160"></canvas>
+    <div class="best">Recorde: <b id="bestScore">0</b></div>
+    <button class="btn big primary" id="btnPlay">▶ JOGAR</button>
+    <div class="row">
+      <button class="btn" id="btnSkins">👕 Personagens</button>
+      <button class="btn gold" id="btnShop">🛒 Loja</button>
+    </div>
+    <button class="btn offer hidden" id="btnStarter">🔥 Oferta Inicial <span>R$ 9,90</span></button>
+    <button class="btn daily" id="btnDaily">🎁 Prêmio diário</button>
+    <div class="tips">PC: ← → ou A/D &nbsp;•&nbsp; Celular: toque nos lados da tela</div>
+    <button class="link" id="btnSound">🔊 Som: ligado</button>
+  </section>
+
+  <!-- PAUSA -->
+  <section id="pause" class="screen hidden">
+    <h2>Pausado</h2>
+    <button class="btn big primary" id="btnResume">▶ Continuar</button>
+    <button class="btn" id="btnQuit">🏠 Menu</button>
+  </section>
+
+  <!-- FIM DE JOGO -->
+  <section id="over" class="screen hidden">
+    <h2>Fim de jogo!</h2>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="new-record hidden" id="newRecord">🏆 NOVO RECORDE!</div>
+    <div class="earned">+ <span id="earnedCoins">0</span> 🪙 <span id="vipTag" class="vip-tag hidden">x2 VIP</span></div>
+    <div id="reviveBox" class="revive">
+      <button class="btn big gold" id="btnRevive">💎 <span id="reviveCost">10</span> Continuar</button>
+      <div class="timer"><div id="reviveBar"></div></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="btnAgain">↻ Jogar de novo</button>
+      <button class="btn" id="btnMenu">🏠 Menu</button>
+    </div>
+    <button class="btn" id="btnShare">📣 Desafiar amigos</button>
+    <div id="vipUpsell" class="upsell">⭐ Com o <b>Passe VIP</b> você teria ganhado <b id="upsellCoins">0</b> 🪙 <button class="link" id="btnUpsell">Ver</button></div>
+  </section>
+
+  <!-- PERSONAGENS -->
+  <section id="skins" class="screen panel hidden">
+    <header><h2>Personagens</h2><button class="icon-btn close" data-close>✕</button></header>
+    <div class="grid" id="skinGrid"></div>
+  </section>
+
+  <!-- LOJA -->
+  <section id="shop" class="screen panel hidden">
+    <header><h2>Loja</h2><button class="icon-btn close" data-close>✕</button></header>
+    <div class="tabs">
+      <button class="tab active" data-tab="gems">💎 Gemas</button>
+      <button class="tab" data-tab="items">🚀 Itens</button>
+    </div>
+    <div class="tab-body" id="tab-gems"></div>
+    <div class="tab-body hidden" id="tab-items"></div>
+    <p class="fine">Pagamento seguro via PayPal (cartão) ou Pix. Itens são entregues na hora.<br>Menores de idade: peça permissão a um responsável.</p>
+  </section>
+
+  <!-- PRÊMIO DIÁRIO -->
+  <section id="daily" class="screen panel hidden">
+    <header><h2>Prêmio diário</h2><button class="icon-btn close" data-close>✕</button></header>
+    <p class="center">Volte todo dia! O prêmio cresce a cada dia seguido.</p>
+    <div class="daily-grid" id="dailyGrid"></div>
+    <button class="btn big primary" id="btnClaim">Pegar prêmio</button>
+  </section>
+
+  <!-- MODAL DE PAGAMENTO -->
+  <div id="payModal" class="modal hidden">
+    <div class="modal-card">
+      <button class="icon-btn close" id="payClose">✕</button>
+      <div id="gate" class="gate">
+        <h3>👨‍👩‍👧 Área dos responsáveis</h3>
+        <p>Para continuar, responda:</p>
+        <div class="gate-q" id="gateQ"></div>
+        <input id="gateA" type="number" inputmode="numeric" placeholder="Resposta">
+        <button class="btn primary" id="gateOk">Continuar</button>
+      </div>
+      <div id="checkout" class="hidden">
+        <h3 id="payTitle">Produto</h3>
+        <p id="payDesc"></p>
+        <div class="price" id="payPrice"></div>
+        <div class="pay-tabs" id="payTabs">
+          <button class="tab active" data-pay="paypal">💳 Cartão / PayPal</button>
+          <button class="tab" data-pay="pix">⚡ Pix</button>
+        </div>
+        <div id="pay-paypal"><div id="paypalButtons"></div></div>
+        <div id="pay-pix" class="hidden">
+          <div id="pixForm">
+            <input id="pixEmail" type="email" placeholder="E-mail do pagador (para o recibo)">
+            <button class="btn primary" id="pixGo">Gerar QR Code Pix</button>
+          </div>
+          <div id="pixResult" class="hidden">
+            <img id="pixQr" alt="QR Code Pix">
+            <textarea id="pixCode" readonly></textarea>
+            <button class="btn" id="pixCopy">📋 Copiar código Pix</button>
+            <p class="waiting">⏳ Aguardando pagamento… pague no app do seu banco e o item chega aqui automaticamente.</p>
+          </div>
+        </div>
+        <div id="pay-demo" class="hidden">
+          <p class="demo-note">🧪 MODO DEMO — nenhuma cobrança real. Configure PayPal/Pix no servidor para vender.</p>
+          <button class="btn big gold" id="demoBuy">Comprar (teste grátis)</button>
+        </div>
+        <div class="pay-msg" id="payMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="catalog.js"></script>
+  <script src="game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

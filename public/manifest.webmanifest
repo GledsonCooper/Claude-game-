@@ -1,0 +1,10 @@
+{
+  "name": "Pulim — Rumo às Nuvens",
+  "short_name": "Pulim",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#6aa8ff",
+  "theme_color": "#5b8cff",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
