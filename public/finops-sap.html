@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinOps para SAP</title>
+<meta name="description" content="Guia prático de FinOps para ambientes SAP: ferramentas, dicas, KPIs, calculadora de economia e checklist de maturidade.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5; --text:#14181f; --muted:#5b6575;
+  --border:#dde2ea; --accent:#0a6ed1; --accent-soft:#e3effb; --good:#1a7f4b; --good-soft:#e2f4ea;
+  --warn:#b25e00; --warn-soft:#fdf0df; --bad:#b42318; --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --surface:#161b22; --surface-2:#1d242e; --text:#e8ecf2; --muted:#9aa5b5;
+    --border:#2a3340; --accent:#4ea3f2; --accent-soft:#132a42; --good:#4cc38a; --good-soft:#12301f;
+    --warn:#f0a44b; --warn-soft:#3a2810; --bad:#f2786d; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --surface:#161b22; --surface-2:#1d242e; --text:#e8ecf2; --muted:#9aa5b5;
+  --border:#2a3340; --accent:#4ea3f2; --accent-soft:#132a42; --good:#4cc38a; --good-soft:#12301f;
+  --warn:#f0a44b; --warn-soft:#3a2810; --bad:#f2786d; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+header.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+header.top .wrap{display:flex;align-items:center;gap:16px;height:56px}
+.brand{font-weight:800;letter-spacing:-.02em;text-decoration:none;color:var(--text);white-space:nowrap}
+.brand span{color:var(--accent)}
+nav.links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1}
+nav.links::-webkit-scrollbar{display:none}
+nav.links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap}
+nav.links a:hover{background:var(--surface-2);color:var(--text)}
+.theme-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;width:36px;height:36px;cursor:pointer;flex:none}
+
+.hero{padding-top:72px;padding-bottom:48px}
+.eyebrow{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:999px}
+.hero h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.035em;margin:18px 0 16px;max-width:16ch}
+.hero p.lead{font-size:clamp(17px,2.2vw,20px);color:var(--muted);max-width:62ch;margin:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:40px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:30px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-size:14px}
+
+section{padding:56px 0;border-top:1px solid var(--border)}
+h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.03em;margin:0 0 8px;line-height:1.15}
+.sub{color:var(--muted);margin:0 0 28px;max-width:70ch}
+h3{font-size:18px;margin:0 0 6px;letter-spacing:-.01em}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.card p{margin:0;color:var(--muted);font-size:15px}
+.card ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:15px}
+.card li{margin:3px 0}
+
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;counter-reset:ph}
+.phase{position:relative;padding-top:52px}
+.phase::before{counter-increment:ph;content:counter(ph);position:absolute;top:18px;left:20px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center}
+
+.drivers{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:200px 1fr 52px;gap:12px;align-items:center;font-size:15px}
+.bar{height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.bar-row span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:999px;font:500 14px Inter,sans-serif;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tool .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);margin-bottom:10px}
+.tool h3{display:flex;justify-content:space-between;gap:8px}
+
+.tips{display:grid;gap:12px}
+details.tip{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+details.tip summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;gap:14px;align-items:center;font-weight:600}
+details.tip summary::-webkit-details-marker{display:none}
+details.tip summary::after{content:"+";margin-left:auto;color:var(--muted);font-size:20px;font-weight:400}
+details.tip[open] summary::after{content:"–"}
+.save{flex:none;font-size:12px;font-weight:700;color:var(--good);background:var(--good-soft);padding:3px 8px;border-radius:6px;font-variant-numeric:tabular-nums}
+.tip-body{padding:0 20px 18px;color:var(--muted);font-size:15px}
+.tip-body p{margin:0 0 8px}
+code{font-family:"JetBrains Mono",monospace;font-size:.86em;background:var(--surface-2);padding:1px 6px;border-radius:5px;color:var(--text)}
+
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.field{margin-bottom:18px}
+.field label{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:6px}
+.field label output{font-variant-numeric:tabular-nums;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font:500 16px Inter,sans-serif}
+.result{display:flex;flex-direction:column;justify-content:center}
+.result .big{font-size:clamp(34px,5vw,48px);font-weight:800;letter-spacing:-.03em;color:var(--good);font-variant-numeric:tabular-nums;line-height:1.1}
+.result dl{display:grid;grid-template-columns:1fr auto;gap:6px 16px;margin:18px 0 0;font-size:15px}
+.result dt{color:var(--muted)}
+.result dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:600;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+
+.check-head{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.meter{flex:1;min-width:200px;height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+.level{font-weight:700;font-variant-numeric:tabular-nums}
+.checklist{display:grid;gap:8px}
+.checklist label{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;cursor:pointer;font-size:15px}
+.checklist input{margin-top:4px;accent-color:var(--good);width:18px;height:18px;flex:none}
+.checklist small{display:block;color:var(--muted);font-size:13px}
+
+.pitfall{border-left:3px solid var(--warn)}
+.pitfall h3{color:var(--warn)}
+footer{padding:40px 0 60px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+
+@media (max-width:640px){
+  .hero{padding-top:44px;padding-bottom:32px}
+  .bar-row{grid-template-columns:1fr 44px}
+  .bar-row .bar{grid-column:1/-1;grid-row:2}
+  section{padding:40px 0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#">FinOps<span>/</span>SAP</a>
+    <nav class="links">
+      <a href="#fundamentos">Fundamentos</a>
+      <a href="#custos">Custos</a>
+      <a href="#ferramentas">Ferramentas</a>
+      <a href="#dicas">Dicas</a>
+      <a href="#calculadora">Calculadora</a>
+      <a href="#kpis">KPIs</a>
+      <a href="#maturidade">Maturidade</a>
+      <a href="#armadilhas">Armadilhas</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Alternar tema"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main>
+<div class="wrap hero">
+  <span class="eyebrow">Guia prático · SAP na nuvem</span>
+  <h1>FinOps para SAP: pague pelo que o negócio usa.</h1>
+  <p class="lead">SAP é, quase sempre, a maior e mais crítica carga da nuvem de uma empresa — e uma das mais caras de manter ligada sem necessidade. Este guia reúne ferramentas, alavancas de economia, indicadores e um checklist de maturidade para colocar finanças, TI e Basis na mesma mesa.</p>
+  <div class="stats">
+    <div class="stat"><b>30–60%</b><small>economia típica em ambientes não produtivos com agendamento liga/desliga</small></div>
+    <div class="stat"><b>até ~70%</b><small>de desconto com reservas / savings plans de 3 anos vs. on-demand</small></div>
+    <div class="stat"><b>20–40%</b><small>redução de memória HANA com archiving, limpeza técnica e data tiering</small></div>
+    <div class="stat"><b>2–4×</b><small>sistemas não produtivos para cada produtivo — muitos ligados 24×7 sem necessidade</small></div>
+  </div>
+  <p class="note">Faixas de referência de mercado; o resultado real depende do landscape, dos contratos e do provedor.</p>
+</div>
+
+<section id="fundamentos">
+  <div class="wrap">
+    <h2>O ciclo FinOps aplicado ao SAP</h2>
+    <p class="sub">O framework da FinOps Foundation tem três fases contínuas. Em SAP, cada uma ganha particularidades: sizing de memória HANA, janelas de manutenção, contratos RISE e o peso das licenças.</p>
+    <div class="phases">
+      <div class="card phase">
+        <h3>Informar</h3>
+        <p>Visibilidade e alocação de custo por SID, ambiente, módulo e centro de custo.</p>
+        <ul>
+          <li>Tags obrigatórias: <code>SID</code>, <code>env</code>, <code>tier</code>, <code>cost-center</code></li>
+          <li>Showback por área de negócio (FI, SD, MM, BW…)</li>
+          <li>Separar custo de infra, licença e serviço gerenciado</li>
+        </ul>
+      </div>
+      <div class="card phase">
+        <h3>Otimizar</h3>
+        <p>Atuar nas alavancas de uso e de taxa.</p>
+        <ul>
+          <li>Uso: rightsizing, snooze, archiving, tiering de storage</li>
+          <li>Taxa: reservas, savings plans, CUDs, Azure Hybrid Benefit</li>
+          <li>Licenças: revisão de usuários, DAA, cloud credits (BTP)</li>
+        </ul>
+      </div>
+      <div class="card phase">
+        <h3>Operar</h3>
+        <p>Governança contínua integrada ao dia a dia do Basis.</p>
+        <ul>
+          <li>Budgets e alertas de anomalia por SID</li>
+          <li>Política de ciclo de vida para sandboxes e cópias de sistema</li>
+          <li>Review mensal FinOps + Basis + negócio</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="custos">
+  <div class="wrap">
+    <h2>Para onde vai o dinheiro</h2>
+    <p class="sub">Composição ilustrativa de um landscape SAP S/4HANA em IaaS (hyperscaler). Use como ponto de partida para investigar o seu.</p>
+    <div class="card">
+      <div class="drivers" id="drivers"></div>
+      <p class="note">Distribuição ilustrativa, sem licenças SAP. Em RISE with SAP, infra e serviço vêm empacotados no contrato — o foco migra para consumo de FUEs/créditos, add-ons e sistemas adicionais.</p>
+    </div>
+  </div>
+</section>
+
+<section id="ferramentas">
+  <div class="wrap">
+    <h2>Ferramentas</h2>
+    <p class="sub">Do sizing ao monitoramento de custo, passando pela automação de liga/desliga. Filtre por categoria.</p>
+    <div class="filters" id="filters" role="group" aria-label="Filtrar ferramentas"></div>
+    <div class="grid g3" id="tools"></div>
+  </div>
+</section>
+
+<section id="dicas">
+  <div class="wrap">
+    <h2>Dicas e alavancas de economia</h2>
+    <p class="sub">Ordenadas por relação esforço × retorno. Clique para ver como aplicar.</p>
+    <div class="tips" id="tips"></div>
+  </div>
+</section>
+
+<section id="calculadora">
+  <div class="wrap">
+    <h2>Calculadora: snooze de ambientes não produtivos</h2>
+    <p class="sub">Estime quanto você economiza desligando DEV/QAS/sandbox fora do horário comercial.</p>
+    <div class="calc">
+      <div class="card">
+        <div class="field">
+          <label for="cost">Custo mensal de compute não-produtivo (R$)</label>
+          <input type="number" id="cost" value="80000" min="0" step="1000">
+        </div>
+        <div class="field">
+          <label for="hours">Horas ligado por dia útil <output id="hoursOut">12h</output></label>
+          <input type="range" id="hours" min="4" max="24" value="12">
+        </div>
+        <div class="field">
+          <label for="days">Dias úteis por semana <output id="daysOut">5</output></label>
+          <input type="range" id="days" min="1" max="7" value="5">
+        </div>
+        <div class="field">
+          <label for="share">Parcela do custo que é compute <output id="shareOut">70%</output></label>
+          <input type="range" id="share" min="30" max="100" value="70">
+        </div>
+      </div>
+      <div class="card result">
+        <small style="color:var(--muted)">Economia estimada por ano</small>
+        <div class="big" id="annual">—</div>
+        <dl>
+          <dt>Economia mensal</dt><dd id="monthly">—</dd>
+          <dt>Horas ligado / semana</dt><dd id="weekHours">—</dd>
+          <dt>Redução de horas</dt><dd id="pct">—</dd>
+        </dl>
+        <p class="note">Storage continua sendo cobrado com o sistema desligado. Considere janelas de jobs, transportes e testes noturnos antes de definir o horário.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="kpis">
+  <div class="wrap">
+    <h2>KPIs e insights</h2>
+    <p class="sub">Indicadores que traduzem custo de nuvem em linguagem de negócio — e de Basis.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>KPI</th><th>Como calcular</th><th>Por que importa</th></tr></thead>
+        <tbody>
+          <tr><td>Custo por SID</td><td>Custo total tagueado ÷ sistema</td><td>Base para showback e para decidir descomissionamento</td></tr>
+          <tr><td>Razão Prod : Não-prod</td><td>Custo PRD ÷ custo DEV+QAS+SBX</td><td>Não-prod acima de 50% do total é sinal de desperdício</td></tr>
+          <tr><td>Utilização de memória HANA</td><td>Pico de memória usada ÷ memória alocada</td><td>Abaixo de 60% sustentado indica oportunidade de rightsizing</td></tr>
+          <tr><td>Cobertura de commitments</td><td>Horas cobertas por RI/SP ÷ horas de produção 24×7</td><td>Meta comum: &gt; 90% para cargas estáveis de PRD</td></tr>
+          <tr><td>Horas de snooze</td><td>Horas desligadas ÷ horas totais (não-prod)</td><td>Mede a disciplina do agendamento liga/desliga</td></tr>
+          <tr><td>Custo por usuário ativo</td><td>Custo total SAP ÷ usuários dialog ativos (ST03/SUIM)</td><td>Conecta custo à adoção e apoia a revisão de licenças</td></tr>
+          <tr><td>Custo por transação de negócio</td><td>Custo do landscape ÷ pedidos, notas ou ordens processadas</td><td>Unit economics: o KPI que o CFO entende</td></tr>
+          <tr><td>Crescimento do banco</td><td>Δ GB/mês por tabela (DB02, HANA Cockpit)</td><td>Antecipar upgrade de memória ou acionar archiving</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card"><h3>💡 Memória é o novo CPU</h3><p>Em HANA, o tamanho da VM é definido pela memória. Cada GB evitado no banco reduz a classe de instância inteira — archiving vira alavanca financeira, não só técnica.</p></div>
+      <div class="card"><h3>💡 Produção raramente é o problema</h3><p>PRD costuma estar bem dimensionado e coberto por reservas. O desperdício mora em sandboxes esquecidas, cópias de sistema e QAS superdimensionados “igual à produção”.</p></div>
+      <div class="card"><h3>💡 Migração é a hora de ouro</h3><p>Projetos de conversão para S/4HANA ou RISE são o melhor momento para limpar dados, revisar sizing e renegociar — depois de migrado, o custo tende a cristalizar.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="maturidade">
+  <div class="wrap">
+    <h2>Checklist de maturidade</h2>
+    <p class="sub">Marque o que sua operação já faz. O progresso fica salvo neste navegador.</p>
+    <div class="check-head">
+      <div class="meter"><i id="meterBar"></i></div>
+      <span class="level" id="levelTxt">Crawl · 0%</span>
+    </div>
+    <div class="checklist" id="checklist"></div>
+  </div>
+</section>
+
+<section id="armadilhas">
+  <div class="wrap">
+    <h2>Armadilhas comuns</h2>
+    <p class="sub">Erros que corroem a economia — ou derrubam a confiança do Basis no programa de FinOps.</p>
+    <div class="grid g2">
+      <div class="card pitfall"><h3>Desligar sem coordenação</h3><p>Parar um sistema no meio de um job, transporte ou replicação SLT gera incidente e mata o programa. Use stop/start orquestrado (app → DB → VM) e respeite calendários de release.</p></div>
+      <div class="card pitfall"><h3>Rightsizing abaixo do certificado</h3><p>Só instâncias certificadas pela SAP (SAP Note 1928533 para Azure, 1656099 para AWS, 2456432 para GCP) têm suporte. Economizar fora da lista pode custar o suporte.</p></div>
+      <div class="card pitfall"><h3>Reservar antes de otimizar</h3><p>Comprar commitment de 3 anos para uma VM superdimensionada trava o desperdício. Primeiro rightsizing, depois reserva.</p></div>
+      <div class="card pitfall"><h3>Ignorar o storage</h3><p>Snapshots antigos, backups com retenção infinita e discos premium em não-prod continuam cobrando com a VM desligada.</p></div>
+      <div class="card pitfall"><h3>Esquecer licenças e acesso indireto</h3><p>Infra é só parte da conta. Usuários inativos, classificação errada de licença e acesso indireto (DAA) podem superar a economia de nuvem.</p></div>
+      <div class="card pitfall"><h3>Tratar FinOps como projeto</h3><p>Sem cadência (review mensal, dono por SID, alertas) o custo volta a crescer em poucos meses.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    FinOps para SAP · Guia de referência. Valores e percentuais são indicativos; valide com seus contratos, notas SAP e calculadoras oficiais dos provedores.
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Tema
+  var root=document.documentElement;
+  try{var t=localStorage.getItem('finops-theme'); if(t) root.dataset.theme=t;}catch(e){}
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var dark = root.dataset.theme ? root.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try{localStorage.setItem('finops-theme',root.dataset.theme);}catch(e){}
+  });
+
+  // Direcionadores de custo
+  var drivers=[
+    ['Compute HANA (DB)',38],['Compute app servers',18],['Storage (discos, snapshots)',16],
+    ['Backup e DR',10],['Rede e transferência',6],['Ferramentas, monitoração, SO',7],['Outros (BTP, integrações)',5]
+  ];
+  document.getElementById('drivers').innerHTML=drivers.map(function(d){
+    return '<div class="bar-row"><span>'+d[0]+'</span><div class="bar"><i style="width:'+(d[1]/38*100)+'%"></i></div><span>'+d[1]+'%</span></div>';
+  }).join('');
+
+  // Ferramentas
+  var tools=[
+    {c:'SAP',n:'SAP Quick Sizer',d:'Sizing de SAPS e memória a partir de usuários ou throughput. Base para não superdimensionar desde o início.'},
+    {c:'SAP',n:'EarlyWatch Alert (EWA)',d:'Relatório periódico com uso de CPU, memória, crescimento de banco e recomendações. Fonte gratuita de dados para rightsizing.'},
+    {c:'SAP',n:'SAP Cloud ALM',d:'Monitoramento de saúde, performance e jobs de soluções cloud e híbridas; ajuda a definir janelas seguras de desligamento.'},
+    {c:'SAP',n:'SAP for Me / BTP Cockpit',d:'Acompanhamento de consumo de créditos CPEA/BTPEA e contratos. Essencial para não estourar ou desperdiçar créditos.'},
+    {c:'SAP',n:'SAP HANA Cockpit / DBACOCKPIT',d:'Análise de memória por tabela, crescimento e candidatos a archiving ou NSE (Native Storage Extension).'},
+    {c:'SAP',n:'SAP Landscape Management (LaMa)',d:'Orquestra stop/start, cópias e refresh de sistemas. Habilita snooze seguro e respeita dependências.'},
+    {c:'Nuvem',n:'AWS Cost Explorer + Launch Wizard for SAP',d:'Custo por tag e recomendações de RI/Savings Plans; Launch Wizard implanta SAP em instâncias certificadas. Use com AWS Instance Scheduler / SSM para snooze.'},
+    {c:'Nuvem',n:'Azure Cost Management + Azure Center for SAP Solutions',d:'Custo e budgets por resource group; ACSS gerencia SAP como recurso e oferece start/stop nativo. Advisor sugere rightsizing e reservas.'},
+    {c:'Nuvem',n:'Google Cloud Billing + Agent for SAP',d:'Exportação de billing para BigQuery, CUDs e métricas de HANA/NetWeaver via Agent for SAP no Cloud Monitoring.'},
+    {c:'Plataforma',n:'Apptio Cloudability',d:'Plataforma FinOps multicloud com alocação, unit economics, forecast e gestão de commitments.'},
+    {c:'Plataforma',n:'Flexera One',d:'Une FinOps de nuvem e gestão de licenças (SAP incluso), útil para visão de custo total.'},
+    {c:'Plataforma',n:'VMware Tanzu CloudHealth',d:'Políticas de governança, rightsizing e relatórios por perspectiva de negócio em várias nuvens.'},
+    {c:'Licenças',n:'Ferramentas SAM (Snow, Flexera, USU, Voquz)',d:'Análise de classificação de usuários, inativos, acesso indireto e otimização de licenças SAP.'},
+    {c:'Licenças',n:'SAP LAW / USMM',d:'Medição oficial de licenças. Revise antes da auditoria para evitar surpresas.'},
+    {c:'Open source',n:'OpenCost / FOCUS',d:'Padrão FOCUS normaliza billing de vários provedores num só esquema; facilita dashboards próprios em BI.'}
+  ];
+  var cats=['Todas'].concat(tools.map(function(t){return t.c}).filter(function(c,i,a){return a.indexOf(c)===i}));
+  var fEl=document.getElementById('filters'), tEl=document.getElementById('tools'), cur='Todas';
+  function renderTools(){
+    fEl.innerHTML=cats.map(function(c){return '<button class="chip" aria-pressed="'+(c===cur)+'" data-c="'+c+'">'+c+'</button>'}).join('');
+    tEl.innerHTML=tools.filter(function(t){return cur==='Todas'||t.c===cur}).map(function(t){
+      return '<div class="card tool"><span class="tag">'+t.c+'</span><h3>'+t.n+'</h3><p>'+t.d+'</p></div>';
+    }).join('');
+  }
+  fEl.addEventListener('click',function(e){var b=e.target.closest('.chip'); if(!b) return; cur=b.dataset.c; renderTools();});
+  renderTools();
+
+  // Dicas
+  var tips=[
+    ['Snooze de não-produtivos','30–60%','Desligue DEV, QAS, treinamento e sandbox fora do expediente e em fins de semana.','Use LaMa, ACSS, AWS Instance Scheduler ou runbooks com <code>sapcontrol -function StopSystem</code> + parada do HANA antes da VM. Publique o calendário e ofereça “wake-up on demand” via self-service.'],
+    ['Reservas e savings plans para PRD','até ~70%','Produção roda 24×7 e é estável — candidata ideal a commitments de 1 ou 3 anos.','Faça rightsizing primeiro. Prefira savings plans/flexibilidade de família quando houver upgrade de S/4 no horizonte. Aplique Azure Hybrid Benefit / BYOS para SUSE e RHEL quando aplicável.'],
+    ['Rightsizing de HANA e app servers','15–35%','Muitos sistemas são dimensionados para o pico do go-live e nunca revisados.','Cruze EWA, HANA Cockpit e métricas da nuvem por 30–90 dias. Reduza app servers via logon groups e escale horizontalmente no fechamento. Respeite a lista de instâncias certificadas.'],
+    ['Archiving e limpeza técnica','20–40% de memória','Tabelas técnicas (logs, IDocs, spool, change docs) crescem silenciosamente.','Comece pela SAP Note 2388483 (housekeeping de tabelas técnicas). Depois avance para archiving de objetos de negócio (FI_DOCUMNT, SD_VBAK, MM_EKKO) com acordo das áreas.'],
+    ['Data tiering com NSE','10–30% de memória','Native Storage Extension mantém dados mornos em disco com acesso transparente.','Identifique partições históricas pouco acessadas e mova para page-loadable. Reduz a necessidade de VMs maiores conforme o banco cresce.'],
+    ['Não-produtivos menores que PRD','20–50%','QAS e DEV raramente precisam do mesmo tamanho da produção.','Use cópias com subset de dados (TDMS / SAP Test Data Migration Server, ou ferramentas de mercado) e instâncias menores. Mantenha um ambiente de pré-produção full-size apenas se o teste de performance exigir.'],
+    ['Storage e backup','10–25% do storage','Discos premium em não-prod, snapshots órfãos e retenção sem política.','Use discos standard/gp3 onde a latência permitir, políticas de ciclo de vida em object storage e retenção alinhada ao RPO real. Revise volumes de log e shared.'],
+    ['Ciclo de vida de sandboxes e cópias','variável','Sistemas criados “para um teste” viram custo permanente.','Exija tag de expiração (<code>expires-on</code>) e dono. Automatize alerta e desligamento após a data. Descomissione sistemas legados pós-migração com arquivamento legal.'],
+    ['Licenças SAP e usuários','5–20% em licenças','Usuários inativos e classificação incorreta inflam o contrato.','Bloqueie e reclassifique usuários sem logon há 90+ dias, revise tipos (Professional vs. Productivity) e avalie o modelo DAA para acesso indireto. Faça antes do USMM/LAW anual.'],
+    ['Créditos BTP e consumo RISE','variável','Créditos CPEA/BTPEA expiram; FUEs mal distribuídos sobram ou faltam.','Acompanhe consumo mensal no SAP for Me, desligue subaccounts e serviços parados e alinhe a renovação ao consumo real.']
+  ];
+  document.getElementById('tips').innerHTML=tips.map(function(t){
+    return '<details class="tip"><summary><span class="save">'+t[1]+'</span>'+t[0]+'</summary><div class="tip-body"><p>'+t[2]+'</p><p><strong>Como fazer:</strong> '+t[3]+'</p></div></details>';
+  }).join('');
+
+  // Calculadora
+  var $=function(id){return document.getElementById(id)};
+  var brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  function calc(){
+    var cost=+$('cost').value||0, h=+$('hours').value, d=+$('days').value, s=+$('share').value/100;
+    $('hoursOut').textContent=h+'h'; $('daysOut').textContent=d; $('shareOut').textContent=Math.round(s*100)+'%';
+    var weekOn=h*d, red=1-weekOn/168, m=cost*s*red;
+    $('annual').textContent=brl.format(m*12); $('monthly').textContent=brl.format(m);
+    $('weekHours').textContent=weekOn+' de 168'; $('pct').textContent=Math.round(red*100)+'%';
+  }
+  ['cost','hours','days','share'].forEach(function(id){$(id).addEventListener('input',calc)});
+  calc();
+
+  // Checklist
+  var items=[
+    ['Todos os recursos SAP têm tags de SID, ambiente e centro de custo','Informar'],
+    ['Existe dashboard de custo por SID e ambiente acessível ao Basis e à gestão','Informar'],
+    ['Custos são reportados por área de negócio (showback/chargeback)','Informar'],
+    ['Ambientes não produtivos são desligados automaticamente fora do expediente','Otimizar'],
+    ['Rightsizing de HANA e app servers é revisado ao menos a cada trimestre','Otimizar'],
+    ['Produção tem cobertura de reservas / savings plans acima de 90%','Otimizar'],
+    ['Há política ativa de housekeeping e archiving de dados','Otimizar'],
+    ['Licenças e usuários SAP são revisados antes de cada medição','Otimizar'],
+    ['Budgets e alertas de anomalia configurados por SID','Operar'],
+    ['Sandboxes e cópias têm dono e data de expiração obrigatórios','Operar'],
+    ['Reunião mensal de FinOps com Basis, finanças e negócio','Operar'],
+    ['Acompanhamos um KPI de unit economics (ex.: custo por pedido)','Operar']
+  ];
+  var KEY='finops-sap-checklist', state={};
+  try{state=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){state={};}
+  $('checklist').innerHTML=items.map(function(it,i){
+    return '<label><input type="checkbox" data-i="'+i+'"'+(state[i]?' checked':'')+'><span>'+it[0]+'<small>'+it[1]+'</small></span></label>';
+  }).join('');
+  function updMeter(){
+    var n=Object.keys(state).filter(function(k){return state[k]}).length, p=Math.round(n/items.length*100);
+    $('meterBar').style.width=p+'%';
+    $('levelTxt').textContent=(p<40?'Crawl':p<75?'Walk':'Run')+' · '+p+'%';
+  }
+  $('checklist').addEventListener('change',function(e){
+    var i=e.target.dataset.i; if(i==null) return; state[i]=e.target.checked;
+    try{localStorage.setItem(KEY,JSON.stringify(state));}catch(err){}
+    updMeter();
+  });
+  updMeter();
+})();
+</script>
+</body>
+</html>
