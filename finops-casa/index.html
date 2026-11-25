@@ -881,7 +881,7 @@ V.config = () => `${head('Casa & Dados', 'Ferramentas & serviços: configure a c
   <div class="card"><h2>🗂️ Categorias</h2><div class="tw"><table><tr><th>Categoria</th><th>Tipo</th><th>Grupo (50/30/20)</th></tr>${S.categorias.map(c => `<tr><td>${c.icone} ${esc(c.nome)}</td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','tipo',this.value)"><option value="fixo" ${c.tipo === 'fixo' ? 'selected' : ''}>Fixo</option><option value="variavel" ${c.tipo === 'variavel' ? 'selected' : ''}>Variável</option></select></td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','grupo',this.value)"><option value="essencial" ${c.grupo === 'essencial' ? 'selected' : ''}>Essencial</option><option value="estilo" ${c.grupo === 'estilo' ? 'selected' : ''}>Estilo de vida</option></select></td></tr>`).join('')}</table></div>
   <div class="row" style="margin-top:10px"><input id="nc_ic" placeholder="🎸" style="width:60px"><input id="nc_nome" placeholder="Nova categoria" style="flex:1;min-width:140px"><button onclick="A.addCat()">Adicionar</button></div></div>
   <div class="card"><h2>💾 Dados</h2><p class="muted" style="font-size:13.5px;margin-top:0">Os dados ficam apenas neste navegador. Faça backup periodicamente — e use o arquivo para levar os dados a outro aparelho.</p>
-  <div class="row"><button class="p" onclick="A.exportar()">⬇ Backup (JSON)</button><label class="btn" style="color:var(--ink);font-size:14px">⬆ Restaurar backup<input type="file" accept=".json" style="display:none" onchange="A.restaurar(this)"></label><button onclick="A.csvTudo()">⬇ Todos os gastos (CSV)</button><button onclick="A.exemplo()">Carregar exemplo</button><button onclick="A.tema()">🌓 Tema</button><span class="sp"></span><button style="color:var(--bad)" onclick="A.zerar()">Apagar tudo</button></div></div>`;
+  <div class="row"><button class="p" onclick="A.exportar()">⬇ Backup (JSON)</button><button onclick="A.colarBackup()">⬆ Restaurar backup</button><button onclick="A.csvTudo()">⬇ Todos os gastos (CSV)</button><button onclick="A.exemplo()">Carregar exemplo</button><button onclick="A.tema()">🌓 Tema</button><span class="sp"></span><button style="color:var(--bad)" onclick="A.zerar()">Apagar tudo</button></div></div>`;
 
 /* ====================== Ações ====================== */
 function autoCategoria(desc){
@@ -891,8 +891,20 @@ function autoCategoria(desc){
 }
 function addTx(t){ S.transacoes.push({id:uid(), aprovada:false, fonte:'manual', quem:'casa', pagou:S.moradores[0]?.id, ...t}); }
 
+function ask(titulo, msg, o = {}){
+  return new Promise(res => {
+    const d = $('#dlg'); d.onclose = null; if (d.open) d.close();
+    d.innerHTML = `<div class="hd">${titulo}</div><div class="bd"><div>${msg}</div>${o.input ? `<input id="ask_in" ${o.num ? 'inputmode="decimal"' : ''} value="${esc(o.valor ?? '')}" placeholder="${esc(o.ph || '')}">` : ''}</div><div class="ft"><button id="ask_no">Cancelar</button><button class="p" id="ask_ok" ${o.perigo ? 'style="background:var(--bad);border-color:var(--bad);color:#fff"' : ''}>${o.ok || 'Confirmar'}</button></div>`;
+    let feito = false; const fim = v => { if (feito) return; feito = true; d.onclose = null; if (d.open) d.close(); res(v); };
+    $('#ask_no').onclick = () => fim(o.input ? null : false);
+    $('#ask_ok').onclick = () => fim(o.input ? $('#ask_in').value : true);
+    if (o.input) $('#ask_in').onkeydown = e => { if (e.key === 'Enter') fim($('#ask_in').value); };
+    d.onclose = () => { if (!d.open) fim(o.input ? null : false); }; // ignora o evento 'close' atrasado do diálogo anterior
+    d.showModal(); setTimeout(() => (o.input ? $('#ask_in') : $('#ask_ok')).focus(), 30);
+  });
+}
 function dialog(titulo, corpo, botoes){
-  const d = $('#dlg');
+  const d = $('#dlg'); d.onclose = null;
   d.innerHTML = `<div class="hd">${titulo}<span class="sp"></span><button class="x" onclick="$('#dlg').close()">✕</button></div><div class="bd">${corpo}</div><div class="ft">${botoes}</div>`;
   d.showModal();
 }
@@ -910,7 +922,7 @@ const A = {
       <label>Categoria<select id="d_cat">${catOpts(t.cat)}</select></label>
       <div class="form"><label>Quem consumiu<select id="d_quem">${quemOpts(t.quem)}</select></label><label>Quem pagou<select id="d_pagou">${quemOpts(t.pagou, false)}</select></label></div>
       ${id ? `<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="d_apr" style="width:auto" ${t.aprovada ? 'checked' : ''}> Compra aprovada pela casa</label>` : ''}`,
-      `${id ? `<button style="color:var(--bad)" onclick="A.del('${id}');$('#dlg').close()">Excluir</button><span class="sp"></span>` : ''}<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.salvarTx(${id ? `'${id}'` : 'null'})">Salvar</button>`);
+      `${id ? `<button style="color:var(--bad)" onclick="A.del('${id}')">Excluir</button><span class="sp"></span>` : ''}<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.salvarTx(${id ? `'${id}'` : 'null'})">Salvar</button>`);
     setTimeout(() => $('#d_' + (id ? 'val' : 'desc')).focus(), 50);
   },
   salvarTx(id){
@@ -927,7 +939,7 @@ const A = {
     addTx({data:val('q_data') || HOJE, desc:val('q_desc') || 'Gasto', valor:v, cat:val('q_cat'), quem:val('q_quem'), pagou:val('q_pagou')});
     S.onboarded = true; save(); render(); toast('Adicionado'); setTimeout(() => $('#q_desc')?.focus(), 30);
   },
-  del(id){ if (!confirm('Excluir este lançamento?')) return; S.transacoes = S.transacoes.filter(t => t.id !== id); save(); render(); },
+  async del(id){ if (!await ask('Excluir lançamento', 'Excluir este lançamento?', {ok:'Excluir', perigo:true})) return; S.transacoes = S.transacoes.filter(t => t.id !== id); save(); render(); },
   setCat(id, c){ const t = S.transacoes.find(x => x.id === id); t.cat = c; save(); toast('Categoria atualizada'); },
   filtrar(c){ FILTRO.cat = c; go('lancamentos'); render(); },
   aprovar(id){ const t = S.transacoes.find(x => x.id === id); t.aprovada = true; save(); render(); toast('Compra aprovada'); },
@@ -974,7 +986,7 @@ const A = {
   },
   addPlan(){ const v = num('pl_val'); if (!val('pl_nome') || !(v > 0) || !val('pl_ini')) return toast('Preencha nome, valor e início');
     S.planejados.push({id:uid(), nome:val('pl_nome'), valor:v, cat:val('pl_cat'), inicio:val('pl_ini'), fim:val('pl_fim') || ''}); save(); render(); toast('Gasto planejado incluído na previsão'); },
-  delItem(col, id){ if (!confirm('Remover este item?')) return; S[col] = S[col].filter(x => x.id !== id); save(); render(); },
+  async delItem(col, id){ if (!await ask('Remover item', 'Remover este item?', {ok:'Remover', perigo:true})) return; S[col] = S[col].filter(x => x.id !== id); save(); render(); },
   simular(){
     const p = num('sv_p'), d = num('sv_d')/100, n = Math.max(1, Math.round(num('sv_n'))), j = num('sv_j')/100, r = num('sv_r')/100;
     const vista = p * (1 - d);
@@ -1009,7 +1021,7 @@ const A = {
   addAss(){ const v = num('as_val'); if (!val('as_nome') || !(v > 0)) return toast('Informe nome e valor');
     S.assinaturas.push({id:uid(), nome:val('as_nome'), valor:v, ciclo:val('as_ciclo'), uso:val('as_uso'), dono:val('as_dono'), renov:val('as_ren')}); save(); render(); },
   setUso(id, u){ S.assinaturas.find(x => x.id === id).uso = u; save(); render(); },
-  cancelarAss(id){ const a = S.assinaturas.find(x => x.id === id); if (!confirm(`Registrar cancelamento de ${a.nome}?`)) return;
+  async cancelarAss(id){ const a = S.assinaturas.find(x => x.id === id); if (!await ask('Cancelar assinatura', `Registrar o cancelamento de <b>${esc(a.nome)}</b>? A economia de ${R(mensalAss(a))}/mês vai para Valor & Metas.`, {ok:'Registrar'})) return;
     S.economias.push({id:uid(), data:HOJE, desc:`Cancelada assinatura ${a.nome}`, valor:mensalAss(a)});
     S.assinaturas = S.assinaturas.filter(x => x.id !== id); save(); render(); toast(`Economia de ${R(mensalAss(a))}/mês registrada`); },
   recFeita(k){ const r = recomendacoes(MES).find(x => x.k === k); S.recStatus[k] = 'feito';
@@ -1025,15 +1037,15 @@ const A = {
   reaplicar(){ let n = 0; for (const t of S.transacoes) if (t.cat === 'outros'){ const c = autoCategoria(t.desc); if (c !== 'outros'){ t.cat = c; n++; } } save(); render(); toast(`${n} lançamento(s) recategorizado(s)`); },
   addMeta(){ const a = num('mt_alvo'); if (!val('mt_nome') || !(a > 0)) return toast('Informe nome e valor alvo');
     S.metas.push({id:uid(), nome:val('mt_nome'), alvo:a, atual:num('mt_atual'), prazo:val('mt_prazo') || addM(HOJE_YM, 12)}); save(); render(); },
-  aportar(id){ const m = S.metas.find(x => x.id === id); const v = numIn(prompt(`Quanto aportar em "${m.nome}"? (R$)`) || ''); if (v){ m.atual += v; save(); render(); } },
-  editReserva(){ const v = prompt('Valor atual da reserva de emergência (R$):', N(S.casa.reserva, 2)); if (v !== null){ S.casa.reserva = numIn(v); save(); render(); } },
-  addEconomia(){ const d = prompt('O que foi feito? (ex.: Troquei plano de celular)'); if (!d) return; const v = numIn(prompt('Economia por mês (R$):') || ''); if (!v) return;
+  async aportar(id){ const m = S.metas.find(x => x.id === id); const v = numIn(await ask('Aporte', `Quanto aportar em <b>${esc(m.nome)}</b>? (R$)`, {input:true, num:true, ok:'Aportar'}) || ''); if (v){ m.atual += v; save(); render(); } },
+  async editReserva(){ const v = await ask('Reserva de emergência', 'Valor atual da reserva (R$):', {input:true, num:true, valor:N(S.casa.reserva, 2), ok:'Salvar'}); if (v !== null){ S.casa.reserva = numIn(v); save(); render(); } },
+  async addEconomia(){ const d = await ask('Registrar economia', 'O que foi feito?', {input:true, ph:'ex.: Troquei plano de celular', ok:'Próximo'}); if (!d) return; const v = numIn(await ask('Registrar economia', 'Economia por mês (R$):', {input:true, num:true, ok:'Salvar'}) || ''); if (!v) return;
     S.economias.push({id:uid(), data:HOJE, desc:d, valor:v}); save(); render(); },
   ritual(k, on){ (S.ritual[MES] = S.ritual[MES] || {})[k] = on; save(); render(); },
   salvarCasa(){ Object.assign(S.casa, {nome:val('cf_nome') || 'Minha casa', area:num('cf_area'), reserva:num('cf_res'), fatorCO2:numIn(val('cf_co2'))}); S.onboarded = true; save(); render(); toast('Salvo'); },
   setMorador(id, k, v){ const m = membro(id); m[k] = k === 'nome' ? v : numIn(v); S.onboarded = true; save(); toast('Salvo'); },
   addMorador(){ S.moradores.push({id:uid(), nome:'Morador ' + (S.moradores.length + 1), peso:1, renda:0}); save(); render(); },
-  delMorador(id){ if (!confirm('Remover morador? Gastos dele passam a ser da casa.')) return;
+  async delMorador(id){ if (!await ask('Remover morador', 'Remover este morador? Os gastos dele passam a ser da casa.', {ok:'Remover', perigo:true})) return;
     S.moradores = S.moradores.filter(m => m.id !== id);
     for (const t of S.transacoes){ if (t.quem === id) t.quem = 'casa'; if (t.pagou === id) t.pagou = S.moradores[0].id; }
     save(); render(); },
@@ -1041,15 +1053,24 @@ const A = {
   setCatCfg(id, k, v){ cat(id)[k] = v; save(); toast('Categoria atualizada'); },
   addCat(){ const n = val('nc_nome'); if (!n) return; const id = n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '') + uid().slice(0, 3);
     S.categorias.splice(S.categorias.length - 1, 0, {id, icone:val('nc_ic') || '🏷️', nome:n, tipo:'variavel', grupo:'estilo'}); save(); render(); },
-  download(nome, conteudo, tipo){ const b = new Blob([conteudo], {type:tipo}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
-  exportar(){ A.download(`finops-casa-${HOJE}.json`, JSON.stringify(S, null, 1), 'application/json'); },
-  restaurar(inp){ const f = inp.files[0]; if (!f) return; const r = new FileReader();
-    r.onload = () => { try { const d = JSON.parse(r.result); if (!d.v || !Array.isArray(d.transacoes)) throw 0; if (!confirm('Substituir os dados atuais pelo backup?')) return; S = Object.assign(defaults(), d); save(); render(); toast('Backup restaurado'); } catch(e) { toast('Arquivo inválido'); } };
-    r.readAsText(f); },
+  download(nome, conteudo, tipo){
+    if (DL) return DL.save({filename:nome, data:conteudo}).then(r => { if (r.status === 'saved') toast('Arquivo salvo'); }, e => toast(e?.code === 'declined' ? 'Download cancelado' : e?.code === 'rate_limited' ? 'Aguarde um instante e tente de novo' : 'Download indisponível aqui — use o backup por texto'));
+    if (window.claude) return toast('Download indisponível aqui — use o backup por texto (Copiar texto)');
+    const b = new Blob([conteudo], {type:tipo}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
+  exportar(){
+    dialog('Backup dos dados', `<p class="muted" style="margin:0">Baixe o arquivo ou copie o texto abaixo e guarde em local seguro (e-mail, nuvem, notas).</p><textarea id="bk_txt" readonly style="min-height:160px">${esc(JSON.stringify(S))}</textarea>`,
+      `<button onclick="A.copiar()">Copiar texto</button><button class="p" onclick="A.download('finops-casa-${HOJE}.json', JSON.stringify(S, null, 1), 'application/json')">⬇ Baixar arquivo</button>`); },
+  copiar(){ const t = $('#bk_txt'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => toast('Copiado'), () => { try { document.execCommand('copy'); toast('Copiado'); } catch(e) { toast('Selecione e copie manualmente'); } }); },
+  colarBackup(){
+    dialog('Restaurar backup', `<p class="muted" style="margin:0">Escolha o arquivo .json ou cole o texto do backup.</p><input type="file" accept=".json,.txt" onchange="const r=new FileReader();r.onload=()=>$('#rs_txt').value=r.result;r.readAsText(this.files[0])"><textarea id="rs_txt" style="min-height:140px" placeholder='{"v":1,...}'></textarea>`,
+      `<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.aplicarBackup($('#rs_txt').value)">Restaurar</button>`); },
+  async aplicarBackup(txt){ let d; try { d = JSON.parse(txt); if (!d.v || !Array.isArray(d.transacoes)) throw 0; } catch(e) { return toast('Backup inválido'); }
+    if (!await ask('Restaurar backup', 'Substituir os dados atuais pelo backup?', {ok:'Substituir', perigo:true})) return;
+    S = Object.assign(defaults(), d); save(); render(); toast('Backup restaurado'); },
   csv(tx){ return '﻿data;descricao;categoria;consumido_por;pago_por;valor\n' + tx.sort((a, b) => a.data.localeCompare(b.data)).map(t => [t.data, `"${t.desc.replace(/"/g, '""')}"`, cat(t.cat).nome, nomeQuem(t.quem), nomeQuem(t.pagou), N(t.valor, 2).replace(/\./g, '')].join(';')).join('\n'); },
   csvMes(){ A.download(`gastos-${MES}.csv`, A.csv(txMes(MES)), 'text/csv'); },
   csvTudo(){ A.download(`gastos-todos.csv`, A.csv([...S.transacoes]), 'text/csv'); },
-  zerar(){ if (!confirm('Apagar TODOS os dados deste navegador? Faça um backup antes.')) return; S = defaults(); save(); MES = HOJE_YM; go('painel'); render(); },
+  async zerar(){ if (!await ask('Apagar tudo', 'Apagar <b>todos</b> os dados deste navegador? Faça um backup antes.', {ok:'Apagar tudo', perigo:true})) return; S = defaults(); save(); MES = HOJE_YM; go('painel'); render(); },
   tema(){ const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem(KEY + '.tema', r.dataset.theme); } catch(e) {} },
   wizard(){
     dialog('Vamos configurar sua casa', `
@@ -1066,8 +1087,8 @@ const A = {
     const r = num('w_renda'); if (r) S.moradores.forEach(m => m.renda = Math.round(r / S.moradores.length * 100)/100);
     S.onboarded = true; save(); $('#dlg').close(); go('lancamentos'); render(); toast('Pronto! Lance ou importe seus primeiros gastos.');
   },
-  exemplo(){
-    if (S.transacoes.length && !confirm('Substituir seus dados pelos dados de exemplo?')) return;
+  async exemplo(){
+    if (S.transacoes.length && !await ask('Dados de exemplo', 'Substituir seus dados pelos dados de exemplo?', {ok:'Substituir', perigo:true})) return;
     S = exemplo(); save(); MES = HOJE_YM; go('painel'); render(); toast('Dados de exemplo carregados');
   },
 };
@@ -1129,6 +1150,8 @@ function exemplo(){
   return s;
 }
 
+let DL = null; // capability 'downloads' quando publicado no claude.ai; fora dele, download comum do navegador
+try { window.claude?.use?.('downloads').then(d => { DL = d; }, () => {}); } catch(e) {}
 try { const t = localStorage.getItem(KEY + '.tema'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
 render();
 </script>
