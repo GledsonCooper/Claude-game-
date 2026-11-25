@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FinOps Casa</title>
+<meta name="description" content="FinOps residencial: Informar, Otimizar e Operar os custos da sua casa.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<style>
+:root{
+  --bg:#f5f6f8;--panel:#fff;--panel2:#f0f2f5;--ink:#1b1f24;--muted:#5d6672;--line:#e1e4e8;
+  --brand:#0f766e;--brand2:#14b8a6;--brandInk:#fff;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--info:#1d4ed8;
+  --okBg:#dcfce7;--warnBg:#fef3c7;--badBg:#fee2e2;--infoBg:#dbeafe;--bar:#0f766e;--bar2:#94a3b8;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1216;--panel:#171b21;--panel2:#1f242b;--ink:#e6e9ed;--muted:#9aa3ae;--line:#2b313a;
+  --brand:#2dd4bf;--brand2:#14b8a6;--brandInk:#06201d;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--info:#60a5fa;
+  --okBg:#12301e;--warnBg:#3a2c0b;--badBg:#3b1515;--infoBg:#14254a;--bar:#2dd4bf;--bar2:#475569;--shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0f1216;--panel:#171b21;--panel2:#1f242b;--ink:#e6e9ed;--muted:#9aa3ae;--line:#2b313a;
+  --brand:#2dd4bf;--brand2:#14b8a6;--brandInk:#06201d;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--info:#60a5fa;
+  --okBg:#12301e;--warnBg:#3a2c0b;--badBg:#3b1515;--infoBg:#14254a;--bar:#2dd4bf;--bar2:#475569;--shadow:none;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--brand)}
+header{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px;margin-right:auto;cursor:pointer}
+.logo small{font-weight:500;color:var(--muted);font-size:12px}
+.month{display:flex;align-items:center;gap:4px;background:var(--panel2);border-radius:10px;padding:2px}
+.month b{min-width:118px;text-align:center;font-size:14px}
+.layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 58px)}
+nav{border-right:1px solid var(--line);background:var(--panel);padding:10px 8px;position:sticky;top:58px;height:calc(100vh - 58px);overflow:auto}
+nav h4{margin:14px 10px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+nav a{display:flex;gap:8px;align-items:center;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px}
+nav a:hover{background:var(--panel2)}
+nav a.on{background:var(--brand);color:var(--brandInk);font-weight:600}
+main{padding:20px;max-width:1150px;width:100%;min-width:0}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:14px}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--muted);font-weight:600;vertical-align:middle}
+.tag.i{background:var(--infoBg);color:var(--info)}.tag.o{background:var(--okBg);color:var(--ok)}.tag.w{background:var(--warnBg);color:var(--warn)}.tag.b{background:var(--badBg);color:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px;min-width:0}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid>.card{margin-bottom:0}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:24px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12.5px;color:var(--muted)}
+.mb{margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tw{overflow-x:auto}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--panel2)}
+button.p{background:var(--brand);color:var(--brandInk);border-color:var(--brand);font-weight:600}
+button.p:hover{filter:brightness(1.08)}
+button.s{padding:3px 8px;font-size:12.5px}
+button.x{border:none;background:none;color:var(--muted);padding:3px 6px}
+button.x:hover{color:var(--bad)}
+input,select,textarea{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%;min-width:0}
+textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:12.5px}
+label{font-size:12.5px;color:var(--muted);display:block}
+label>input,label>select,label>textarea{margin-top:3px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{flex:1}
+.bar{height:9px;background:var(--panel2);border-radius:99px;overflow:hidden;min-width:60px}
+.bar>i{display:block;height:100%;background:var(--bar);border-radius:99px}
+.bar>i.w{background:var(--warn)}.bar>i.b{background:var(--bad)}.bar>i.o{background:var(--ok)}
+.hb{display:grid;grid-template-columns:minmax(90px,170px) 1fr auto;gap:10px;align-items:center;margin:6px 0;font-size:14px}
+.hb .bar{height:12px}
+.alert{border-radius:10px;padding:10px 12px;margin:6px 0;display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.alert.w{background:var(--warnBg)}.alert.b{background:var(--badBg)}.alert.o{background:var(--okBg)}.alert.i{background:var(--infoBg)}
+.alert .t{flex:1}
+.muted{color:var(--muted)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px}
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+.hero{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none}
+.hero h1{color:#fff}.hero p{opacity:.95}
+.hero button{background:#fff;color:#0f766e;border:none;font-weight:600}
+.phase{border-left:4px solid var(--brand);padding-left:12px}
+.check{display:flex;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line)}
+.check input{width:20px;height:20px;flex:none}
+.check .t{flex:1}
+dialog{border:none;border-radius:16px;padding:0;background:var(--panel);color:var(--ink);width:min(520px,calc(100vw - 32px));box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .hd{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:700;display:flex}
+dialog .bd{padding:16px;display:grid;gap:10px}
+dialog .ft{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:99;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:99px;background:var(--panel2);font-size:13px}
+.lvl{display:flex;gap:6px}.lvl span{flex:1;text-align:center;padding:8px;border-radius:10px;background:var(--panel2);font-weight:600;font-size:13px;color:var(--muted)}
+.lvl span.on{background:var(--brand);color:var(--brandInk)}
+details summary{cursor:pointer;font-weight:600}
+.fab{display:none}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  nav{position:static;height:auto;display:flex;overflow-x:auto;gap:4px;border-right:none;border-bottom:1px solid var(--line);padding:8px 16px;z-index:10}
+  nav h4{display:none}
+  nav a{flex:none;padding:6px 10px;background:var(--panel2)}
+  main{padding:16px}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3,.g2{grid-template-columns:1fr}
+  header{padding:8px 16px}
+  .hdadd{display:none}
+  .fab{display:block;position:fixed;right:16px;bottom:16px;z-index:30;border-radius:99px;padding:14px 18px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .hb{grid-template-columns:90px 1fr auto}
+}
+@media (max-width:420px){.g4{grid-template-columns:1fr 1fr}.kpi .v{font-size:19px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" onclick="go('painel')">🏠 FinOps Casa <small id="casaNome"></small></div>
+  <div class="month">
+    <button class="x" onclick="A.mes(-1)" aria-label="Mês anterior">◀</button>
+    <b id="mesLbl"></b>
+    <button class="x" onclick="A.mes(1)" aria-label="Próximo mês">▶</button>
+  </div>
+  <button class="p hdadd" onclick="A.novoGasto()">+ Lançar gasto</button>
+</header>
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<button class="p fab" onclick="A.novoGasto()">+ Gasto</button>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ====================== Utilidades ====================== */
+const KEY = 'finopsCasa.v1';
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const R = v => (Number(v) || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const R0 = v => (Number(v) || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0});
+const N = (v, d = 1) => (Number(v) || 0).toLocaleString('pt-BR', {maximumFractionDigits:d});
+const P = v => isFinite(v) ? N(v, 0) + '%' : '—';
+const sum = a => a.reduce((s, x) => s + (Number(x) || 0), 0);
+const pad2 = n => String(n).padStart(2, '0');
+const hoje = new Date();
+const HOJE = `${hoje.getFullYear()}-${pad2(hoje.getMonth()+1)}-${pad2(hoje.getDate())}`;
+const HOJE_YM = HOJE.slice(0, 7);
+const ymOf = d => String(d).slice(0, 7);
+function addM(ym, k){ let [y, m] = ym.split('-').map(Number); m += k; while (m > 12){ m -= 12; y++; } while (m < 1){ m += 12; y--; } return `${y}-${pad2(m)}`; }
+const diasNoMes = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+const nomeMes = (ym, curto) => { const [y, m] = ym.split('-').map(Number); return new Date(y, m-1, 1).toLocaleDateString('pt-BR', curto ? {month:'short'} : {month:'long', year:'numeric'}).replace('.', ''); };
+const dataBR = d => d ? d.split('-').reverse().join('/') : '';
+const meses = (fim, n) => Array.from({length:n}, (_, i) => addM(fim, i - n + 1));
+function num(id){ const el = document.getElementById(id); return el ? parseFloat(String(el.value).replace(/\./g, '').replace(',', '.')) || 0 : 0; }
+function numIn(v){ const s = String(v).trim(); if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0; return parseFloat(s) || 0; }
+function val(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2200); }
+
+/* ====================== Modelo de dados ====================== */
+const CATS = [
+  ['moradia','🏠','Moradia (aluguel/condomínio)','fixo','essencial'],
+  ['energia','⚡','Energia elétrica','fixo','essencial'],
+  ['agua','💧','Água e esgoto','fixo','essencial'],
+  ['gas','🔥','Gás','variavel','essencial'],
+  ['internet','📶','Internet & telefone','fixo','essencial'],
+  ['mercado','🛒','Mercado','variavel','essencial'],
+  ['transporte','🚗','Transporte','variavel','essencial'],
+  ['saude','🩺','Saúde & farmácia','variavel','essencial'],
+  ['educacao','📚','Educação','fixo','essencial'],
+  ['impostos','🧾','Impostos & seguros','fixo','essencial'],
+  ['manutencao','🔧','Manutenção da casa','variavel','essencial'],
+  ['pets','🐾','Pets','variavel','essencial'],
+  ['restaurantes','🍽️','Restaurantes & delivery','variavel','estilo'],
+  ['assinaturas','📺','Assinaturas & apps','fixo','estilo'],
+  ['lazer','🎉','Lazer & viagens','variavel','estilo'],
+  ['vestuario','👕','Vestuário & compras','variavel','estilo'],
+  ['tarifas','🏦','Juros, tarifas & multas','variavel','estilo'],
+  ['outros','❓','Sem categoria','variavel','estilo'],
+].map(([id, icone, nome, tipo, grupo]) => ({id, icone, nome, tipo, grupo}));
+
+const AUTO = [
+  ['aluguel|condom|imobili','moradia'],
+  ['enel|light|cemig|copel|celesc|coelba|energisa|cpfl|equatorial|neoenergia|eletropaulo|energia','energia'],
+  ['sabesp|cedae|copasa|sanepar|embasa|compesa|caesb|água|agua','agua'],
+  ['comgas|ultragaz|liquigas|supergasbras|gás|botijao|botijão','gas'],
+  ['vivo|claro|tim|oi |net |fibra|internet|celular','internet'],
+  ['mercado|supermerc|carrefour|assai|assaí|atacad|pão de açúcar|extra|hortifruti|sacolão|padaria','mercado'],
+  ['uber|99app|99 |posto|ipiranga|shell|combust|gasolina|estacion|metrô|metro|ônibus|bilhete','transporte'],
+  ['farm|drogaria|droga|raia|pacheco|médic|medic|hospital|clínica|clinica|plano de saúde|unimed|amil|dentista','saude'],
+  ['escola|faculdade|curso|udemy|alura|inglês|ingles','educacao'],
+  ['iptu|ipva|seguro|licenciamento|darf','impostos'],
+  ['leroy|telhanorte|eletricista|encanador|reforma|conserto|material de constru','manutencao'],
+  ['petz|cobasi|petshop|pet shop|veterin|ração|racao','pets'],
+  ['ifood|rappi|restaurante|lanchonete|burger|pizza|bar |café|cafe','restaurantes'],
+  ['netflix|spotify|disney|prime|hbo|max|globoplay|youtube|deezer|apple|icloud|google one|microsoft|academia|smartfit|gympass|wellhub|chatgpt|claude','assinaturas'],
+  ['cinema|ingresso|show|viagem|hotel|airbnb|passagem|latam|gol |azul','lazer'],
+  ['renner|riachuelo|c&a|zara|shein|shopee|amazon|mercado livre|magalu|americanas|loja','vestuario'],
+  ['juros|tarifa|iof|multa|anuidade|encargo|cheque especial|mora','tarifas'],
+];
+
+const RITUAL = [
+  ['ingest','Lançar ou importar todas as despesas do mês','lancamentos','Ingestão de dados'],
+  ['aloc','Conferir categorias e quem consumiu cada gasto','alocacao','Alocação'],
+  ['anom','Revisar anomalias e cobranças duplicadas','anomalias','Gestão de anomalias'],
+  ['orc','Comparar real × orçamento e ajustar a previsão','orcamento','Orçamento & Previsão'],
+  ['subs','Revisar assinaturas e cancelar as ociosas','assinaturas','Licenças & SaaS'],
+  ['uso','Registrar leituras de luz, água e gás','consumo','Otimização de uso'],
+  ['rateio','Fazer o acerto entre os moradores','alocacao','Faturamento & Chargeback'],
+  ['rec','Aplicar pelo menos 1 recomendação de economia','recomendacoes','Otimização'],
+  ['metas','Atualizar metas e reserva de emergência','valor','Quantificar valor'],
+  ['reuniao','Conversa de 15 min com a família sobre os números','aprender','Educação & cultura'],
+];
+
+function defaults(){
+  return {
+    v:1, onboarded:false,
+    casa:{nome:'Minha casa', area:70, reserva:0, fatorCO2:0.05},
+    moradores:[{id:'m1', nome:'Eu', peso:1, renda:0}],
+    categorias:JSON.parse(JSON.stringify(CATS)),
+    transacoes:[], orcamentos:{}, consumos:[], assinaturas:[], contratos:[], metas:[], economias:[], planejados:[],
+    regras:{alertaOrc:80, anomaliaPct:30, limiteCompra:500, essencialMax:50, estiloMax:30, poupancaMin:20, moradiaMax:30},
+    autoCat:JSON.parse(JSON.stringify(AUTO)),
+    ritual:{}, recStatus:{}
+  };
+}
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v) return Object.assign(defaults(), s); } catch(e) {}
+  return defaults();
+}
+let S = load();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast('Não foi possível salvar no navegador'); } }
+
+let MES = HOJE_YM;
+let ROTA = 'painel';
+let FILTRO = {cat:'', q:''};
+
+/* ====================== Cálculos ====================== */
+const cat = id => S.categorias.find(c => c.id === id) || S.categorias.find(c => c.id === 'outros') || {id:'outros', icone:'❓', nome:'Sem categoria', tipo:'variavel', grupo:'estilo'};
+const membro = id => S.moradores.find(m => m.id === id);
+const nomeQuem = id => id === 'casa' ? 'Casa (compartilhado)' : (membro(id)?.nome || '—');
+const txMes = m => S.transacoes.filter(t => ymOf(t.data) === m);
+const totalMes = m => sum(txMes(m).map(t => t.valor));
+function porCat(m){ const o = {}; for (const t of txMes(m)) o[t.cat] = (o[t.cat] || 0) + t.valor; return o; }
+const mesesComDados = () => [...new Set(S.transacoes.map(t => ymOf(t.data)))].sort();
+const renda = () => sum(S.moradores.map(m => m.renda));
+function mediaCat(m, n = 3){
+  const ms = meses(addM(m, -1), n).filter(x => txMes(x).length);
+  const o = {}; if (!ms.length) return o;
+  for (const x of ms){ const pc = porCat(x); for (const k in pc) o[k] = (o[k] || 0) + pc[k]; }
+  for (const k in o) o[k] /= ms.length;
+  return o;
+}
+function mediaTotal(m, n = 3){ const ms = meses(addM(m, -1), n).filter(x => txMes(x).length); return ms.length ? sum(ms.map(totalMes)) / ms.length : 0; }
+const planejadosAtivos = m => S.planejados.filter(p => p.inicio <= m && (!p.fim || p.fim >= m));
+
+function previsao(m){
+  const real = porCat(m), hist = mediaCat(m, 3);
+  const dias = diasNoMes(m);
+  const passado = m < HOJE_YM, futuro = m > HOJE_YM;
+  const dec = passado ? dias : futuro ? 0 : hoje.getDate();
+  const det = {};
+  for (const c of S.categorias){
+    const r = real[c.id] || 0, h = hist[c.id] || 0;
+    let v;
+    if (passado) v = r;
+    else if (c.tipo === 'fixo') v = Math.max(r, h);
+    else v = r + h * (dias - dec) / dias;
+    if (v) det[c.id] = v;
+  }
+  if (!passado) for (const p of planejadosAtivos(m)) det[p.cat] = (det[p.cat] || 0) + p.valor;
+  return {total:sum(Object.values(det)), det};
+}
+
+function anomalias(m){
+  const out = [], pct = S.regras.anomaliaPct;
+  const real = porCat(m), hist = mediaCat(m, 3);
+  for (const c of S.categorias){
+    const r = real[c.id] || 0, h = hist[c.id] || 0;
+    if (h > 0 && r > h * (1 + pct/100) && r - h > 30)
+      out.push({sev: r > h*2 ? 'b' : 'w', tipo:'Categoria acima do normal', txt:`${c.icone} ${c.nome}: ${R(r)} contra média de ${R(h)} (+${P((r/h-1)*100)})`, impacto:r-h});
+    else if (!h && r > 200 && Object.keys(hist).length && c.id !== 'outros')
+      out.push({sev:'i', tipo:'Gasto novo', txt:`${c.icone} ${c.nome}: ${R(r)} sem histórico nos últimos 3 meses`, impacto:r});
+  }
+  const seis = meses(m, 6);
+  const tx = txMes(m);
+  for (const t of tx){
+    if (cat(t.cat).tipo === 'fixo') continue;
+    const hist6 = S.transacoes.filter(x => x.cat === t.cat && x.id !== t.id && seis.includes(ymOf(x.data))).map(x => x.valor).sort((a, b) => a - b);
+    if (hist6.length >= 3){
+      const med = hist6[Math.floor(hist6.length/2)];
+      if (t.valor > med * 3 && t.valor > 100) out.push({sev:'w', tipo:'Valor fora do padrão', txt:`${t.desc} (${dataBR(t.data)}): ${R(t.valor)} — normalmente ${R(med)} em ${cat(t.cat).nome}`, impacto:t.valor-med, tx:t.id});
+    }
+  }
+  const vistos = new Set();
+  for (const a of tx) for (const b of tx){
+    if (a.id >= b.id) continue;
+    const k = [a.id, b.id].join();
+    if (vistos.has(k)) continue;
+    if (Math.abs(a.valor - b.valor) < 0.01 && a.desc.trim().toLowerCase() === b.desc.trim().toLowerCase() && Math.abs(new Date(a.data) - new Date(b.data)) <= 3*864e5){
+      vistos.add(k);
+      out.push({sev:'b', tipo:'Possível cobrança duplicada', txt:`${a.desc}: ${R(a.valor)} em ${dataBR(a.data)} e ${dataBR(b.data)}`, impacto:a.valor, tx:b.id});
+    }
+  }
+  return out.sort((a, b) => b.impacto - a.impacto);
+}
+
+const mensalAss = a => a.ciclo === 'anual' ? a.valor/12 : a.valor;
+
+function consumoRef(tipo){ return {energia:{un:'kWh', ref:100, nome:'Energia', ic:'⚡'}, agua:{un:'m³', ref:4, nome:'Água', ic:'💧'}, gas:{un:'m³/kg', ref:4, nome:'Gás', ic:'🔥'}}[tipo]; }
+function pessoas(){ return Math.max(1, sum(S.moradores.map(m => m.peso >= 1 ? 1 : (m.peso || 0) > 0 ? 1 : 0)) || S.moradores.length); }
+
+function recomendacoes(m){
+  const recs = [];
+  for (const a of S.assinaturas){
+    if (a.uso === 'nenhum' || a.uso === 'baixo')
+      recs.push({k:'ass-cancel-'+a.id, area:'Licenças & SaaS', titulo:`Cancelar ou pausar ${a.nome}`, det:`Uso ${a.uso === 'nenhum' ? 'nenhum' : 'baixo'} nos últimos 30 dias. Custo: ${R(mensalAss(a))}/mês (${R(mensalAss(a)*12)}/ano).`, eco:mensalAss(a), esf:'Baixo'});
+    else if (a.ciclo === 'mensal' && a.uso === 'alto' && a.valor >= 20)
+      recs.push({k:'ass-anual-'+a.id, area:'Otimização de tarifas', titulo:`Avaliar plano anual de ${a.nome}`, det:`Uso alto e pagamento mensal. Planos anuais costumam sair ~15% mais baratos (compromisso = "reserva" da nuvem).`, eco:a.valor*0.15, esf:'Baixo'});
+  }
+  const streaming = S.assinaturas.filter(a => /netflix|disney|prime|hbo|max|globo|paramount|apple tv|star/i.test(a.nome));
+  if (streaming.length >= 3){
+    const menor = Math.min(...streaming.map(mensalAss));
+    recs.push({k:'ass-rodizio', area:'Licenças & SaaS', titulo:`Rodízio de streaming (${streaming.length} ativos)`, det:`Mantenha 1–2 por vez e alterne a cada mês. Economia estimada: o menor deles.`, eco:menor, esf:'Médio'});
+  }
+  for (const c of S.contratos){
+    if (c.valorAlt > 0 && c.valorAlt < c.valor)
+      recs.push({k:'ctr-'+c.id+'-'+c.valorAlt, area:'Otimização de tarifas', titulo:`Renegociar/trocar: ${c.nome}`, det:`Hoje ${R(c.valor)}/mês com ${esc(c.fornecedor||'fornecedor atual')}. Alternativa: ${esc(c.alternativa||'oferta')} por ${R(c.valorAlt)}.`, eco:c.valor - c.valorAlt, esf:'Médio'});
+  }
+  const ult = meses(m, 3).map(x => S.consumos.filter(c => c.mes === x));
+  for (const tipo of ['energia','agua','gas']){
+    const regs = S.consumos.filter(c => c.tipo === tipo && c.mes <= m).sort((a, b) => a.mes < b.mes ? 1 : -1);
+    if (!regs.length) continue;
+    const r = regs[0], ref = consumoRef(tipo), pp = r.qtd / pessoas();
+    if (pp > ref.ref * 1.2 && r.custo > 0){
+      const ecoU = r.custo * Math.min(0.25, 1 - (ref.ref * pessoas()) / r.qtd);
+      recs.push({k:'uso-'+tipo+'-'+r.mes, area:'Otimização de uso', titulo:`Reduzir consumo de ${ref.nome.toLowerCase()}`, det:`${N(pp)} ${ref.un}/pessoa em ${nomeMes(r.mes, true)}, acima da referência de ~${ref.ref} ${ref.un}/pessoa. Veja dicas em Consumo.`, eco:ecoU, esf:'Médio'});
+    }
+  }
+  const taxas = txMes(m).filter(t => t.cat === 'tarifas');
+  if (taxas.length){
+    const v = sum(taxas.map(t => t.valor));
+    recs.push({k:'taxas-'+m, area:'Eliminar desperdício', titulo:'Zerar juros, tarifas e multas', det:`${taxas.length} cobrança(s) em ${nomeMes(m)} somando ${R(v)}. Peça isenção do pacote bancário, use conta digital e pague em dia (débito automático).`, eco:v, esf:'Baixo'});
+  }
+  const pv = previsao(m);
+  for (const c of S.categorias){
+    const o = S.orcamentos[c.id] || 0, p = pv.det[c.id] || 0;
+    if (o > 0 && p > o * 1.1 && c.grupo === 'estilo')
+      recs.push({k:'orc-'+c.id+'-'+m, area:'Orçamento', titulo:`Segurar ${c.nome.toLowerCase()}`, det:`Previsão de ${R(p)} para orçamento de ${R(o)}. Defina um teto semanal de ${R(o/4.3)}.`, eco:p - o, esf:'Médio'});
+  }
+  const st = S.recStatus;
+  return recs.filter(r => r.eco > 0.5).map(r => ({...r, status:st[r.k] || ''})).sort((a, b) => (a.status ? 1 : 0) - (b.status ? 1 : 0) || b.eco - a.eco);
+}
+
+function violacoes(m){
+  const v = [], rg = S.regras, tx = txMes(m);
+  const grandes = tx.filter(t => t.valor > rg.limiteCompra && !t.aprovada && cat(t.cat).tipo !== 'fixo');
+  for (const t of grandes) v.push({sev:'w', pol:'Aprovação de compras grandes', txt:`${t.desc} — ${R(t.valor)} em ${dataBR(t.data)} acima de ${R(rg.limiteCompra)} sem aprovação`, acao:`<button class="s" onclick="A.aprovar('${t.id}')">Aprovar</button>`});
+  const sem = tx.filter(t => t.cat === 'outros');
+  if (sem.length) v.push({sev:'w', pol:'Todo gasto deve ter categoria', txt:`${sem.length} lançamento(s) sem categoria (${R(sum(sem.map(t => t.valor)))})`, acao:`<button class="s" onclick="A.filtrar('outros')">Categorizar</button>`});
+  const pv = previsao(m);
+  for (const c of S.categorias){
+    const o = S.orcamentos[c.id] || 0, r = porCat(m)[c.id] || 0;
+    if (o > 0 && r >= o * rg.alertaOrc/100) v.push({sev: r > o ? 'b' : 'w', pol:`Alerta de orçamento (${rg.alertaOrc}%)`, txt:`${c.icone} ${c.nome}: ${R(r)} de ${R(o)} (${P(r/o*100)})`});
+  }
+  const rd = renda();
+  if (rd > 0){
+    const g = grupos(m, true);
+    if (g.essencial/rd*100 > rg.essencialMax) v.push({sev:'w', pol:`Essenciais ≤ ${rg.essencialMax}% da renda`, txt:`Previsto ${P(g.essencial/rd*100)} da renda em essenciais`});
+    if (g.estilo/rd*100 > rg.estiloMax) v.push({sev:'w', pol:`Estilo de vida ≤ ${rg.estiloMax}% da renda`, txt:`Previsto ${P(g.estilo/rd*100)} da renda em estilo de vida`});
+    const poup = (rd - pv.total)/rd*100;
+    if (poup < rg.poupancaMin) v.push({sev: poup < 0 ? 'b' : 'w', pol:`Poupança ≥ ${rg.poupancaMin}% da renda`, txt:`Previsão de poupança: ${P(poup)} (${R(rd - pv.total)})`});
+    const mor = (pv.det.moradia || 0)/rd*100;
+    if (mor > rg.moradiaMax) v.push({sev:'w', pol:`Moradia ≤ ${rg.moradiaMax}% da renda`, txt:`Moradia consome ${P(mor)} da renda`});
+  }
+  return v;
+}
+
+function grupos(m, prev){
+  const det = prev ? previsao(m).det : porCat(m); const o = {essencial:0, estilo:0};
+  for (const k in det) o[cat(k).grupo] += det[k];
+  return o;
+}
+
+function rateio(m){
+  const tx = txMes(m), ms = S.moradores, pesoT = sum(ms.map(x => x.peso)) || 1;
+  const linhas = ms.map(x => ({id:x.id, nome:x.nome, ind:0, comp:0, pagou:0}));
+  const L = id => linhas.find(l => l.id === id);
+  for (const t of tx){
+    if (t.quem === 'casa' || !L(t.quem)) for (const l of linhas) l.comp += t.valor * (membro(l.id).peso || 0) / pesoT;
+    else L(t.quem).ind += t.valor;
+    const pg = L(t.pagou) || linhas[0];
+    if (pg) pg.pagou += t.valor;
+  }
+  for (const l of linhas){ l.total = l.ind + l.comp; l.devido = l.total; }
+  // dependentes (sem renda) aparecem no showback, mas seu custo é bancado pelos que têm renda (proporcional ao peso)
+  const pagantes = linhas.filter(l => (membro(l.id).renda || 0) > 0), pesoP = sum(pagantes.map(l => membro(l.id).peso || 0));
+  if (pagantes.length && pesoP > 0) for (const l of linhas) if (!((membro(l.id).renda || 0) > 0)){
+    l.dep = true; for (const p of pagantes) p.devido += l.total * (membro(p.id).peso || 0) / pesoP; l.devido = 0;
+  }
+  for (const l of linhas) l.saldo = l.pagou - l.devido;
+  const dev = linhas.filter(l => l.saldo < -0.5).map(l => ({...l, r:-l.saldo})), cre = linhas.filter(l => l.saldo > 0.5).map(l => ({...l, r:l.saldo}));
+  const acertos = [];
+  for (const d of dev) for (const c of cre){
+    const v = Math.min(d.r, c.r); if (v < 0.5) continue;
+    acertos.push({de:d.nome, para:c.nome, v}); d.r -= v; c.r -= v;
+  }
+  return {linhas, acertos};
+}
+
+function maturidade(){
+  const m = HOJE_YM, ant = addM(m, -1);
+  const tx = S.transacoes, txm = txMes(m).length ? txMes(m) : txMes(ant);
+  const alocPct = txm.length ? txm.filter(t => t.cat !== 'outros').length / txm.length * 100 : 0;
+  const rit = Math.max(...[m, ant].map(x => Object.values(S.ritual[x] || {}).filter(Boolean).length)) / RITUAL.length * 100;
+  const c = [
+    ['Informar','Gastos lançados no mês atual ou anterior', txm.length >= 5, 'lancamentos'],
+    ['Informar','≥ 90% dos gastos categorizados (alocação)', alocPct >= 90, 'alocacao'],
+    ['Informar','Moradores cadastrados com peso de rateio', S.moradores.length >= 1 && S.moradores.some(x => x.nome !== 'Eu'), 'config'],
+    ['Informar','3+ meses de histórico (base para anomalias)', mesesComDados().length >= 3, 'relatorios'],
+    ['Informar','Renda informada (unit economics e % da renda)', renda() > 0, 'config'],
+    ['Otimizar','Orçamento definido para 5+ categorias', Object.values(S.orcamentos).filter(v => v > 0).length >= 5, 'orcamento'],
+    ['Otimizar','Assinaturas inventariadas com nível de uso', S.assinaturas.length >= 1, 'assinaturas'],
+    ['Otimizar','Contratos com alternativa cotada', S.contratos.some(x => x.valorAlt > 0), 'tarifas'],
+    ['Otimizar','Leituras de consumo registradas', S.consumos.length >= 1, 'consumo'],
+    ['Otimizar','Pelo menos 1 economia aplicada', S.economias.length >= 1, 'recomendacoes'],
+    ['Operar','Ritual mensal ≥ 80% concluído', rit >= 80, 'ritual'],
+    ['Operar','Metas financeiras definidas', S.metas.length >= 1, 'valor'],
+    ['Operar','Reserva de emergência registrada', S.casa.reserva > 0, 'valor'],
+    ['Operar','Políticas revisadas (limite de compra definido)', S.regras.limiteCompra > 0 && S.onboarded, 'governanca'],
+  ];
+  const score = Math.round(c.filter(x => x[2]).length / c.length * 100);
+  const nivel = score < 40 ? 0 : score < 75 ? 1 : 2;
+  return {c, score, nivel};
+}
+
+/* ====================== Gráficos ====================== */
+function barChart(labels, values, opt = {}){
+  const w = 640, h = 210, pl = 8, pr = 8, pt = 18, pb = 26;
+  const max = Math.max(1, ...values, ...(opt.line || []).filter(Boolean)) * 1.1;
+  const bw = (w - pl - pr) / values.length;
+  const y = v => pt + (h - pt - pb) * (1 - v/max);
+  let s = `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(opt.label || 'Gráfico')}">`;
+  s += `<line x1="${pl}" x2="${w-pr}" y1="${h-pb}" y2="${h-pb}" stroke="var(--line)"/>`;
+  values.forEach((v, i) => {
+    const x = pl + i*bw + bw*0.18, bh = (h - pt - pb) - (y(v) - pt);
+    const fill = opt.colors?.[i] || 'var(--bar)';
+    s += `<rect x="${x}" y="${y(v)}" width="${bw*0.64}" height="${Math.max(0, bh)}" rx="4" fill="${fill}"><title>${esc(labels[i])}: ${R(v)}</title></rect>`;
+    s += `<text x="${x + bw*0.32}" y="${h-8}" text-anchor="middle">${esc(labels[i])}</text>`;
+    if (v > 0 && values.length <= 12) s += `<text x="${x + bw*0.32}" y="${y(v) - 4}" text-anchor="middle">${N(v/1000, 1)}k</text>`;
+  });
+  if (opt.line){
+    const pts = opt.line.map((v, i) => v ? `${pl + i*bw + bw/2},${y(v)}` : null).filter(Boolean);
+    if (pts.length > 1) s += `<polyline points="${pts.join(' ')}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 4"/>`;
+    else if (pts.length === 1) s += `<circle cx="${pts[0].split(',')[0]}" cy="${pts[0].split(',')[1]}" r="4" fill="var(--warn)"/>`;
+  }
+  return s + '</svg>';
+}
+function hbars(rows, max){
+  max = max || Math.max(1, ...rows.map(r => r.v));
+  return rows.map(r => `<div class="hb"><span title="${esc(r.l)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.l}</span><div class="bar"><i class="${r.c || ''}" style="width:${Math.min(100, r.v/max*100)}%"></i></div><b class="n" style="font-variant-numeric:tabular-nums">${r.t ?? R(r.v)}</b></div>`).join('');
+}
+const pbar = (v, o) => { const p = o > 0 ? v/o*100 : 0; const c = p > 100 ? 'b' : p >= S.regras.alertaOrc ? 'w' : 'o'; return `<div class="bar"><i class="${c}" style="width:${Math.min(100, p)}%"></i></div>`; };
+const kpi = (l, v, d = '', cls = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v ${cls}">${v}</div><div class="d">${d}</div></div>`;
+const catOpts = sel => S.categorias.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${c.icone} ${esc(c.nome)}</option>`).join('');
+const quemOpts = (sel, casa = true) => (casa ? `<option value="casa" ${sel === 'casa' ? 'selected' : ''}>🏠 Casa (compartilhado)</option>` : '') + S.moradores.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.nome)}</option>`).join('');
+const head = (t, s, fase) => `<h1>${t} ${fase ? `<span class="tag i">${fase}</span>` : ''}</h1><p class="sub">${s}</p>`;
+
+/* ====================== Navegação ====================== */
+const NAV = [
+  ['Visão geral', [['painel','📊','Painel'], ['mapa','🧭','Mapa FinOps']]],
+  ['1 · Informar', [['lancamentos','📥','Lançamentos'], ['alocacao','🏷️','Alocação & Rateio'], ['relatorios','📈','Relatórios'], ['anomalias','🚨','Anomalias'], ['unitarios','🧮','Custos unitários']]],
+  ['2 · Otimizar', [['orcamento','🎯','Orçamento & Previsão'], ['planejamento','🗓️','Planejamento'], ['tarifas','💱','Tarifas & Contratos'], ['consumo','💡','Consumo & Sustentab.'], ['assinaturas','📺','Assinaturas'], ['recomendacoes','✨','Recomendações']]],
+  ['3 · Operar', [['governanca','🛡️','Políticas'], ['valor','🏆','Valor & Metas'], ['benchmark','⚖️','Benchmarking'], ['ritual','🔁','Ritual mensal'], ['maturidade','🌱','Maturidade'], ['aprender','🎓','Aprender'], ['config','⚙️','Casa & Dados']]],
+];
+function go(r){ location.hash = r; }
+function render(){
+  ROTA = (location.hash || '#painel').slice(1) || 'painel';
+  if (!V[ROTA]) ROTA = 'painel';
+  $('#nav').innerHTML = NAV.map(([g, it]) => `<h4>${g}</h4>` + it.map(([id, ic, l]) => `<a href="#${id}" class="${id === ROTA ? 'on' : ''}">${ic} ${l}</a>`).join('')).join('');
+  { const t = nomeMes(MES); $('#mesLbl').textContent = t[0].toUpperCase() + t.slice(1); }
+  $('#casaNome').textContent = S.casa.nome;
+  $('#main').innerHTML = V[ROTA]();
+  ({planejamento:() => { A.simular(); A.simMeta(); }, tarifas:() => A.simAnual(), consumo:() => A.payback()})[ROTA]?.();
+  const on = $('#nav a.on'); if (on && window.innerWidth <= 860) on.scrollIntoView({inline:'center', block:'nearest'});
+}
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+/* ====================== Telas ====================== */
+const V = {};
+
+V.painel = () => {
+  if (!S.transacoes.length && !S.onboarded) return `
+  <div class="card hero"><h1>Bem-vindo ao FinOps Casa 🏠</h1>
+  <p>FinOps é a disciplina que empresas usam para controlar o custo da nuvem: <b>Informar</b> (ver para onde vai o dinheiro), <b>Otimizar</b> (gastar melhor) e <b>Operar</b> (criar hábito e regras). Aqui aplicamos exatamente o mesmo método às contas da sua casa.</p>
+  <div class="row"><button onclick="A.wizard()">Começar do zero (2 minutos)</button><button onclick="A.exemplo()">Ver com dados de exemplo</button></div></div>
+  <div class="grid g3">
+    <div class="card phase"><h2>1 · Informar</h2><p class="muted">Lance ou importe o extrato, categorize, divida entre moradores e veja relatórios, anomalias e custo por pessoa/m².</p></div>
+    <div class="card phase"><h2>2 · Otimizar</h2><p class="muted">Orçamento, previsão, renegociação de contratos, consumo de luz/água, assinaturas ociosas e recomendações com economia estimada.</p></div>
+    <div class="card phase"><h2>3 · Operar</h2><p class="muted">Políticas da casa, metas, benchmarking, ritual mensal de 15 minutos e nível de maturidade (Engatinhar → Andar → Correr).</p></div>
+  </div>`;
+  const m = MES, tot = totalMes(m), pv = previsao(m), orc = sum(Object.values(S.orcamentos)), rd = renda();
+  const ant = totalMes(addM(m, -1)), an = anomalias(m), vi = violacoes(m), rc = recomendacoes(m).filter(r => !r.status);
+  const ecoReal = sum(S.economias.map(e => e.valor)), mt = maturidade();
+  const ult = meses(m, 6);
+  const pc = porCat(m);
+  const top = Object.entries(pc).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => ({l:`${cat(k).icone} ${esc(cat(k).nome)}`, v, c: S.orcamentos[k] && v > S.orcamentos[k] ? 'b' : ''}));
+  const poup = rd ? (rd - pv.total)/rd*100 : NaN;
+  return head('Painel', `Resumo de ${nomeMes(m)} — o ciclo FinOps em uma tela.`) + `
+  <div class="grid g4 mb">
+    ${kpi('Gasto no mês', R0(tot), ant ? `${tot >= ant ? '▲' : '▼'} ${P(Math.abs(tot/ant - 1)*100)} vs mês anterior` : 'sem mês anterior')}
+    ${kpi('Previsão de fechamento', R0(pv.total), orc ? `orçamento ${R0(orc)} (${P(pv.total/orc*100)})` : '<a href="#orcamento">definir orçamento</a>', orc && pv.total > orc ? 'bad' : '')}
+    ${kpi('Taxa de poupança prevista', rd ? P(poup) : '—', rd ? `${R0(rd - pv.total)} de ${R0(rd)}` : '<a href="#config">informar renda</a>', poup < S.regras.poupancaMin ? 'warn' : 'ok')}
+    ${kpi('Economia realizada', R0(ecoReal) + '<small style="font-size:13px">/mês</small>', `${R0(ecoReal*12)} por ano`, 'ok')}
+  </div>
+  <div class="grid g3 mb">
+    <a class="card" href="#anomalias" style="text-decoration:none;color:inherit"><div class="row"><b>🚨 Anomalias</b><span class="sp"></span><span class="tag ${an.length ? 'b' : 'o'}">${an.length}</span></div><p class="muted" style="margin:6px 0 0">${an[0] ? esc(an[0].tipo) + ': ' + esc(an[0].txt).slice(0, 90) : 'Nada fora do padrão.'}</p></a>
+    <a class="card" href="#recomendacoes" style="text-decoration:none;color:inherit"><div class="row"><b>✨ Oportunidades</b><span class="sp"></span><span class="tag o">${R0(sum(rc.map(r => r.eco)))}/mês</span></div><p class="muted" style="margin:6px 0 0">${rc[0] ? esc(rc[0].titulo) : 'Sem recomendações pendentes.'}</p></a>
+    <a class="card" href="#governanca" style="text-decoration:none;color:inherit"><div class="row"><b>🛡️ Políticas</b><span class="sp"></span><span class="tag ${vi.length ? 'w' : 'o'}">${vi.length} alerta(s)</span></div><p class="muted" style="margin:6px 0 0">${vi[0] ? esc(vi[0].pol) : 'Tudo dentro das regras da casa.'}</p></a>
+  </div>
+  <div class="grid g2 mb">
+    <div class="card"><h2>Últimos 6 meses</h2>${barChart(ult.map(x => nomeMes(x, true)), ult.map(totalMes), {line:ult.map(x => x === m ? pv.total : 0), label:'Gastos mensais'})}<p class="muted" style="font-size:12.5px;margin:4px 0 0">Barras = real · ponto laranja = previsão do mês selecionado</p></div>
+    <div class="card"><h2>Para onde foi o dinheiro</h2>${top.length ? hbars(top) : '<div class="empty">Nenhum gasto neste mês. <a href="javascript:A.novoGasto()">Lançar o primeiro</a></div>'}</div>
+  </div>
+  <div class="card"><div class="row"><h2 style="margin:0">Maturidade FinOps: ${['Engatinhar','Andar','Correr'][mt.nivel]} (${mt.score}/100)</h2><span class="sp"></span><a href="#maturidade">ver detalhes</a></div>
+  <div class="lvl" style="margin-top:10px">${['🐣 Engatinhar','🚶 Andar','🏃 Correr'].map((x, i) => `<span class="${i === mt.nivel ? 'on' : ''}">${x}</span>`).join('')}</div></div>`;
+};
+
+V.mapa = () => {
+  const dom = [
+    ['Entender uso e custo','Informar',[
+      ['Ingestão de dados','Lançamento manual e importação de extrato CSV com categorização automática','lancamentos'],
+      ['Alocação','Categorias, grupo essencial/estilo e quem consumiu (morador ou casa)','alocacao'],
+      ['Relatórios & Análises','Tendência de 12 meses, por categoria, fixo × variável, maiores gastos','relatorios'],
+      ['Gestão de anomalias','Detecção de categoria acima da média, valores fora do padrão e cobranças duplicadas','anomalias']]],
+    ['Quantificar valor','Informar / Operar',[
+      ['Planejamento & Estimativa','Novos gastos planejados e simulador à vista × parcelado','planejamento'],
+      ['Previsão (Forecasting)','Previsão do fechamento do mês e dos próximos 3 meses','orcamento'],
+      ['Orçamento (Budgeting)','Orçamento por categoria com alertas','orcamento'],
+      ['Benchmarking','Regra 50/30/20, moradia × renda, mês × média histórica','benchmark'],
+      ['Economia unitária','Custo por morador, por m², por dia, R$/kWh, R$/m³, % da renda','unitarios']]],
+    ['Otimizar uso e custo','Otimizar',[
+      ['Arquitetura (decisões estruturais)','Calculadora de payback de melhorias (LED, solar, eletrodomésticos)','consumo'],
+      ['Otimização de uso (rightsizing)','Leituras de luz/água/gás, consumo por pessoa e dicas','consumo'],
+      ['Otimização de tarifas','Contratos × alternativas, plano anual × mensal','tarifas'],
+      ['Licenças & SaaS','Inventário de assinaturas, uso e ociosidade','assinaturas'],
+      ['Sustentabilidade','Pegada de CO₂ da energia elétrica','consumo']]],
+    ['Gerenciar a prática FinOps','Operar',[
+      ['Operações da prática','Ritual mensal com checklist','ritual'],
+      ['Políticas & Governança','Limite de compra com aprovação, tetos por grupo, regras de categorização','governanca'],
+      ['Avaliação (Assessment)','Nível de maturidade Engatinhar/Andar/Correr','maturidade'],
+      ['Ferramentas & Serviços','Este app + exportação/importação de dados','config'],
+      ['Educação & Capacitação','Princípios, glossário e papéis na família','aprender'],
+      ['Faturamento & Chargeback','Showback por morador e acerto de contas (quem paga quem)','alocacao'],
+      ['Onboarding de cargas','Entrada de novos gastos recorrentes no planejamento','planejamento'],
+      ['Disciplinas que se cruzam','Impostos, seguros e investimentos (em Aprender)','aprender']]],
+  ];
+  return head('Mapa FinOps', 'Como cada domínio e capacidade do FinOps Framework foi traduzido para a casa — clique para ir à tela.') + `
+  <div class="grid g3 mb">
+    <div class="card phase"><h2>1 · Informar</h2><p class="muted" style="margin:0">Visibilidade e alocação: saber exatamente quanto, onde e quem gasta.</p></div>
+    <div class="card phase"><h2>2 · Otimizar</h2><p class="muted" style="margin:0">Pagar menos pelo mesmo (tarifas) e usar só o necessário (uso).</p></div>
+    <div class="card phase"><h2>3 · Operar</h2><p class="muted" style="margin:0">Regras, rituais e cultura para a economia durar.</p></div>
+  </div>` + dom.map(([d, f, caps]) => `<div class="card"><h2>${d} <span class="tag i">${f}</span></h2><div class="tw"><table><tr><th>Capacidade FinOps</th><th>Na sua casa</th><th></th></tr>${caps.map(([c, t, r]) => `<tr><td><b>${c}</b></td><td class="muted">${t}</td><td class="n"><a href="#${r}">abrir →</a></td></tr>`).join('')}</table></div></div>`).join('');
+};
+
+V.lancamentos = () => {
+  const m = MES;
+  let tx = txMes(m).sort((a, b) => b.data.localeCompare(a.data));
+  if (FILTRO.cat) tx = tx.filter(t => t.cat === FILTRO.cat);
+  if (FILTRO.q) tx = tx.filter(t => t.desc.toLowerCase().includes(FILTRO.q.toLowerCase()));
+  const dia = m === HOJE_YM ? HOJE : `${m}-01`;
+  return head('Lançamentos', 'Ingestão de dados: tudo que sai da conta da casa entra aqui — à mão ou importando o extrato do banco.', 'Informar') + `
+  <div class="card"><h2>Lançamento rápido</h2>
+  <div class="form">
+    <label>Data<input type="date" id="q_data" value="${dia}"></label>
+    <label style="grid-column:span 2">Descrição<input id="q_desc" placeholder="ex.: Mercado Assaí" oninput="A.sugCat(this.value,'q_cat')"></label>
+    <label>Valor (R$)<input id="q_val" inputmode="decimal" placeholder="0,00" onkeydown="if(event.key==='Enter')A.addRapido()"></label>
+    <label>Categoria<select id="q_cat">${catOpts('outros')}</select></label>
+    <label>Quem consumiu<select id="q_quem">${quemOpts('casa')}</select></label>
+    <label>Quem pagou<select id="q_pagou">${quemOpts(S.moradores[0]?.id, false)}</select></label>
+    <button class="p" onclick="A.addRapido()">Adicionar</button>
+  </div></div>
+  <details class="card"><summary>📄 Importar extrato (CSV)</summary>
+    <p class="muted" style="font-size:13.5px">Exporte o extrato do banco/cartão em CSV com colunas <b>data, descrição, valor</b> (qualquer ordem, com cabeçalho). Se houver valores negativos, só os negativos (débitos) são importados. Duplicados são ignorados e a categoria é sugerida pelas <a href="#governanca">regras automáticas</a>.</p>
+    <div class="row mb"><input type="file" id="csvFile" accept=".csv,.txt" style="max-width:320px" onchange="A.lerArquivo(this)"></div>
+    <textarea id="csvTxt" placeholder="data;descrição;valor&#10;05/11/2026;Mercado Assaí;-312,45&#10;06/11/2026;Uber;-23,90"></textarea>
+    <div class="row" style="margin-top:8px"><label style="display:flex;gap:6px;align-items:center"><span>Consumido por</span><select id="csvQuem" style="width:auto">${quemOpts('casa')}</select></label><label style="display:flex;gap:6px;align-items:center"><span>Pago por</span><select id="csvPagou" style="width:auto">${quemOpts(S.moradores[0]?.id, false)}</select></label><span class="sp"></span><button class="p" onclick="A.importar()">Importar</button></div>
+  </details>
+  <div class="card">
+    <div class="row mb"><h2 style="margin:0">${nomeMes(m)} · ${tx.length} lançamento(s) · ${R(sum(tx.map(t => t.valor)))}</h2><span class="sp"></span>
+      <select style="width:auto" onchange="FILTRO.cat=this.value;render()"><option value="">Todas as categorias</option>${catOpts(FILTRO.cat)}</select>
+      <input style="width:160px" placeholder="Buscar…" value="${esc(FILTRO.q)}" onchange="FILTRO.q=this.value;render()">
+    </div>
+    ${tx.length ? `<div class="tw"><table><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Consumo</th><th class="n">Valor</th><th></th></tr>
+    ${tx.map(t => `<tr><td>${dataBR(t.data).slice(0, 5)}</td><td>${esc(t.desc)} ${t.aprovada ? '<span class="tag o">aprovada</span>' : ''}</td>
+      <td><select class="s" style="width:auto;padding:3px 6px;font-size:13px" onchange="A.setCat('${t.id}',this.value)">${catOpts(t.cat)}</select></td>
+      <td class="muted">${esc(nomeQuem(t.quem))}</td><td class="n">${R(t.valor)}</td>
+      <td class="n"><button class="x" title="Editar" onclick="A.editar('${t.id}')">✏️</button><button class="x" title="Excluir" onclick="A.del('${t.id}')">✕</button></td></tr>`).join('')}</table></div>`
+    : `<div class="empty">Nenhum lançamento ${FILTRO.cat || FILTRO.q ? 'com esse filtro' : 'neste mês'}.</div>`}
+  </div>`;
+};
+
+V.alocacao = () => {
+  const m = MES, tx = txMes(m), tot = sum(tx.map(t => t.valor));
+  const aloc = sum(tx.filter(t => t.cat !== 'outros').map(t => t.valor));
+  const {linhas, acertos} = rateio(m);
+  const g = grupos(m);
+  const fixo = sum(tx.filter(t => cat(t.cat).tipo === 'fixo').map(t => t.valor));
+  const casa = sum(tx.filter(t => t.quem === 'casa').map(t => t.valor));
+  return head('Alocação & Rateio', 'Quem consome o quê (showback) e quanto cada um deve pagar (chargeback). Gastos da "Casa" são divididos pelo peso de cada morador.', 'Informar') + `
+  <div class="grid g4 mb">
+    ${kpi('Gasto alocado', P(tot ? aloc/tot*100 : 0), `${R0(tot - aloc)} sem categoria`, tot && aloc/tot < .9 ? 'warn' : 'ok')}
+    ${kpi('Compartilhado', R0(casa), P(tot ? casa/tot*100 : 0) + ' do total')}
+    ${kpi('Fixo × variável', P(tot ? fixo/tot*100 : 0) + ' fixo', `${R0(fixo)} fixo · ${R0(tot - fixo)} variável`)}
+    ${kpi('Essencial × estilo', P(tot ? g.essencial/tot*100 : 0) + ' essencial', `${R0(g.essencial)} · ${R0(g.estilo)}`)}
+  </div>
+  <div class="card"><h2>Showback por morador</h2>
+  <div class="tw"><table><tr><th>Morador</th><th class="n">Peso</th><th class="n">Individual</th><th class="n">Parte da casa</th><th class="n">Consumo total</th><th class="n">Responsável por</th><th class="n">Pagou</th><th class="n">Saldo</th></tr>
+  ${linhas.map(l => `<tr><td>${esc(l.nome)} ${l.dep ? '<span class="tag">dependente</span>' : ''}</td><td class="n">${N(membro(l.id).peso, 2)}</td><td class="n">${R(l.ind)}</td><td class="n">${R(l.comp)}</td><td class="n"><b>${R(l.total)}</b></td><td class="n">${R(l.devido)}</td><td class="n">${R(l.pagou)}</td><td class="n ${l.saldo < -0.5 ? 'bad' : l.saldo > 0.5 ? 'ok' : ''}">${l.saldo > 0 ? '+' : ''}${R(l.saldo)}</td></tr>`).join('')}
+  </table></div><p class="muted" style="font-size:13px">Pesos ajustáveis em <a href="#config">Casa & Dados</a> (ex.: criança = 0,5; quem ganha mais pode ter peso maior). Moradores sem renda são <b>dependentes</b>: o consumo deles é bancado pelos demais, na proporção dos pesos.</p></div>
+  <div class="card"><h2>Chargeback — acerto do mês</h2>
+  ${acertos.length ? acertos.map(a => `<div class="alert i"><span>💸</span><div class="t"><b>${esc(a.de)}</b> transfere <b>${R(a.v)}</b> para <b>${esc(a.para)}</b></div></div>`).join('') : '<div class="empty">Contas equilibradas — ninguém deve nada a ninguém neste mês.</div>'}</div>
+  <div class="card"><h2>Por categoria</h2>${hbars(Object.entries(porCat(m)).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({l:`${cat(k).icone} ${esc(cat(k).nome)}`, v, t:`${R(v)} · ${P(v/tot*100)}`})))||'<div class="empty">Sem dados.</div>'}</div>`;
+};
+
+V.relatorios = () => {
+  const m = MES, ult = meses(m, 12), vals = ult.map(totalMes), pc = porCat(m), tot = totalMes(m);
+  const top = txMes(m).sort((a, b) => b.valor - a.valor).slice(0, 10);
+  const cats = Object.entries(pc).sort((a, b) => b[1] - a[1]);
+  const com = vals.filter(Boolean);
+  const media = com.length ? sum(com)/com.length : 0;
+  const trend = meses(m, 6);
+  const topCats = cats.slice(0, 6).map(c => c[0]);
+  return head('Relatórios & Análises', 'Visibilidade: tendência, composição e maiores gastos.', 'Informar') + `
+  <div class="grid g4 mb">
+    ${kpi('Total do mês', R0(tot))}
+    ${kpi('Média 12 meses', R0(media), `${com.length} mês(es) com dados`)}
+    ${kpi('Maior mês', R0(Math.max(0, ...vals)), vals.some(Boolean) ? nomeMes(ult[vals.indexOf(Math.max(...vals))]) : '')}
+    ${kpi('Gasto por dia', R(tot / (m === HOJE_YM ? hoje.getDate() : diasNoMes(m))), 'média diária do mês')}
+  </div>
+  <div class="card"><div class="row"><h2 style="margin:0">Tendência de 12 meses</h2><span class="sp"></span><button class="s" onclick="A.csvMes()">⬇ Exportar CSV do mês</button></div>${barChart(ult.map(x => nomeMes(x, true)), vals, {label:'Gastos dos últimos 12 meses'})}</div>
+  <div class="card"><h2>Categorias principais — últimos 6 meses</h2><div class="tw"><table><tr><th>Categoria</th>${trend.map(x => `<th class="n">${nomeMes(x, true)}</th>`).join('')}<th class="n">Var.</th></tr>
+  ${topCats.map(k => { const vs = trend.map(x => porCat(x)[k] || 0); const a = vs[vs.length-2], b = vs[vs.length-1]; return `<tr><td>${cat(k).icone} ${esc(cat(k).nome)}</td>${vs.map(v => `<td class="n">${v ? R0(v) : '—'}</td>`).join('')}<td class="n ${b > a ? 'bad' : 'ok'}">${a ? (b >= a ? '+' : '') + P((b/a - 1)*100) : '—'}</td></tr>`; }).join('')}
+  </table></div></div>
+  <div class="grid g2">
+    <div class="card"><h2>Composição de ${nomeMes(m, true)}</h2>${cats.length ? hbars(cats.map(([k, v]) => ({l:`${cat(k).icone} ${esc(cat(k).nome)}`, v, t:P(v/tot*100)}))) : '<div class="empty">Sem dados.</div>'}</div>
+    <div class="card"><h2>10 maiores gastos</h2>${top.length ? `<table>${top.map(t => `<tr><td>${esc(t.desc)}<div class="muted" style="font-size:12px">${dataBR(t.data)} · ${cat(t.cat).icone} ${esc(cat(t.cat).nome)}</div></td><td class="n">${R(t.valor)}</td></tr>`).join('')}</table>` : '<div class="empty">Sem dados.</div>'}</div>
+  </div>`;
+};
+
+V.anomalias = () => {
+  const an = anomalias(MES);
+  return head('Gestão de anomalias', `Gastos fora do padrão em ${nomeMes(MES)}: categorias acima da média dos 3 meses anteriores (limite +${S.regras.anomaliaPct}%), valores 3× acima do usual e cobranças duplicadas.`, 'Informar') + `
+  <div class="card">${an.length ? an.map(a => `<div class="alert ${a.sev}"><span>${a.sev === 'b' ? '🔴' : a.sev === 'w' ? '🟠' : '🔵'}</span><div class="t"><b>${esc(a.tipo)}</b><br>${esc(a.txt)}</div>${a.tx ? `<button class="s" onclick="A.editar('${a.tx}')">Ver</button>` : ''}</div>`).join('') : '<div class="empty">✅ Nenhuma anomalia encontrada neste mês.</div>'}</div>
+  <div class="card"><h2>Como agir em uma anomalia</h2><ol class="muted" style="margin:0;padding-left:20px">
+    <li><b>Confirme</b>: o gasto é real? Duplicado? Cobrança indevida? Conteste com o banco/fornecedor.</li>
+    <li><b>Explique</b>: foi pontual (presente, conserto) ou mudança de padrão (tarifa subiu, novo hábito)?</li>
+    <li><b>Ajuste</b>: atualize o orçamento ou crie uma recomendação/política para evitar repetição.</li></ol>
+  <p class="muted" style="font-size:13px">A sensibilidade é ajustável em <a href="#governanca">Políticas</a>.</p></div>`;
+};
+
+V.unitarios = () => {
+  const m = MES, tot = totalMes(m), pc = porCat(m), np = pessoas(), area = S.casa.area || 0, rd = renda();
+  const dias = m === HOJE_YM ? hoje.getDate() : diasNoMes(m);
+  const cs = t => S.consumos.find(c => c.mes === m && c.tipo === t);
+  const en = cs('energia'), ag = cs('agua'), gs = cs('gas');
+  const moradia = (pc.moradia || 0) + (pc.energia || 0) + (pc.agua || 0) + (pc.gas || 0) + (pc.internet || 0) + (pc.manutencao || 0);
+  const ref = meses(addM(m, -1), 3).filter(x => txMes(x).length);
+  const totAnt = ref.length ? sum(ref.map(totalMes))/ref.length : 0;
+  return head('Economia unitária', 'Métricas por unidade: tiram o "tamanho" da conta e mostram eficiência — como custo por usuário em uma empresa.', 'Informar') + `
+  <div class="grid g3 mb">
+    ${kpi('Custo por morador', R(tot/np), `${np} morador(es) · média anterior ${R(totAnt/np)}`)}
+    ${kpi('Custo por dia', R(tot/dias), `${dias} dia(s) considerados`)}
+    ${kpi('Custo da moradia por m²', area ? R(moradia/area) : '—', area ? `${area} m² · moradia+contas+manutenção` : '<a href="#config">informar área</a>')}
+    ${kpi('Energia: R$ por kWh', en && en.qtd ? R(en.custo/en.qtd) : '—', en ? `${N(en.qtd, 0)} kWh · ${N(en.qtd/np, 0)} kWh/pessoa` : '<a href="#consumo">registrar leitura</a>')}
+    ${kpi('Água: R$ por m³', ag && ag.qtd ? R(ag.custo/ag.qtd) : '—', ag ? `${N(ag.qtd)} m³ · ${N(ag.qtd*1000/np/diasNoMes(m), 0)} litros/pessoa/dia` : '<a href="#consumo">registrar leitura</a>')}
+    ${kpi('Gás: R$ por unidade', gs && gs.qtd ? R(gs.custo/gs.qtd) : '—', gs ? `${N(gs.qtd)} m³/kg` : '<a href="#consumo">registrar leitura</a>')}
+    ${kpi('% da renda comprometida', rd ? P(tot/rd*100) : '—', rd ? `renda ${R0(rd)}` : '<a href="#config">informar renda</a>', rd && tot/rd > 0.8 ? 'bad' : '')}
+    ${kpi('Mercado por pessoa', R((pc.mercado || 0)/np), 'alimentação em casa')}
+    ${kpi('Custo de mobilidade por pessoa', R((pc.transporte || 0)/np), 'transporte')}
+  </div>
+  <div class="card"><h2>Por que isso importa?</h2><p class="muted" style="margin:0">Se a conta total subiu mas o custo por morador caiu (alguém chegou), a casa ficou <b>mais eficiente</b>. Se o R$/kWh subiu, o problema é <b>tarifa</b> (vá em Tarifas); se os kWh por pessoa subiram, o problema é <b>uso</b> (vá em Consumo). Separar tarifa de uso é o coração do FinOps.</p></div>`;
+};
+
+V.orcamento = () => {
+  const m = MES, pc = porCat(m), pv = previsao(m), hist = mediaCat(m, 3);
+  const linhas = S.categorias.filter(c => S.orcamentos[c.id] || pc[c.id] || pv.det[c.id] || hist[c.id]);
+  const to = sum(Object.values(S.orcamentos)), tr = sum(Object.values(pc));
+  const prox = [1, 2, 3].map(k => addM(m, k));
+  return head('Orçamento & Previsão', 'Budgeting e forecasting: quanto planejamos, quanto já gastamos e como o mês deve fechar.', 'Otimizar') + `
+  <div class="grid g4 mb">
+    ${kpi('Orçamento do mês', R0(to))}
+    ${kpi('Realizado', R0(tr), to ? P(tr/to*100) + ' do orçamento' : '')}
+    ${kpi('Previsão de fechamento', R0(pv.total), to ? (pv.total > to ? `estoura em ${R0(pv.total - to)}` : `sobra ${R0(to - pv.total)}`) : '', to && pv.total > to ? 'bad' : 'ok')}
+    ${kpi('Precisão da previsão', m < HOJE_YM ? '—' : '±' + P(m === HOJE_YM ? 100 * (1 - hoje.getDate()/diasNoMes(m)) * 0.3 : 30), 'incerteza estimada')}
+  </div>
+  <div class="card"><div class="row mb"><h2 style="margin:0">Por categoria</h2><span class="sp"></span><button class="s" onclick="A.sugerirOrc()">Sugerir pela média de 3 meses</button></div>
+  <div class="tw"><table><tr><th>Categoria</th><th class="n" style="width:130px">Orçamento</th><th class="n">Real</th><th class="n">Previsão</th><th style="min-width:110px">Uso</th></tr>
+  ${linhas.map(c => { const o = S.orcamentos[c.id] || 0, r = pc[c.id] || 0, p = pv.det[c.id] || 0; return `<tr><td>${c.icone} ${esc(c.nome)}<div class="muted" style="font-size:12px">${c.tipo} · média ${R0(hist[c.id] || 0)}</div></td>
+    <td class="n"><input inputmode="decimal" style="width:110px;text-align:right" value="${o ? N(o, 2) : ''}" placeholder="—" onchange="A.setOrc('${c.id}',this.value)"></td>
+    <td class="n">${R(r)}</td><td class="n ${o && p > o ? 'bad' : ''}">${R(p)}</td><td>${o ? pbar(r, o) + `<span class="muted" style="font-size:12px">${P(r/o*100)}</span>` : '<span class="muted" style="font-size:12px">sem orçamento</span>'}</td></tr>`; }).join('') || '<tr><td colspan="5" class="empty">Lance gastos para ver as categorias.</td></tr>'}
+  </table></div>
+  <details style="margin-top:10px"><summary>+ Orçar outra categoria</summary><div class="row" style="margin-top:8px"><select id="oc_cat" style="width:auto">${catOpts()}</select><input id="oc_val" inputmode="decimal" placeholder="R$" style="width:120px"><button onclick="A.setOrc(val('oc_cat'),val('oc_val'))">Salvar</button></div></details></div>
+  <div class="card"><h2>Previsão dos próximos 3 meses</h2>
+  ${barChart([nomeMes(m, true), ...prox.map(x => nomeMes(x, true))], [pv.total, ...prox.map(x => previsao(x).total)], {line:[to, to, to, to], label:'Previsão'})}
+  <p class="muted" style="font-size:13px;margin:6px 0 0">Baseada na média dos últimos 3 meses + gastos planejados (<a href="#planejamento">Planejamento</a>). Linha tracejada = orçamento atual.</p></div>`;
+};
+
+V.planejamento = () => {
+  const m = MES;
+  return head('Planejamento & Estimativa', 'Antes de assumir um novo gasto recorrente ou uma compra grande, estime o impacto (é o "onboarding" de uma nova carga de trabalho).', 'Otimizar') + `
+  <div class="card"><h2>🧩 Onboarding de novo gasto recorrente</h2>
+  <p class="muted" style="font-size:13.5px">Ex.: escola nova, plano de saúde, financiamento. Entra automaticamente na previsão a partir do mês de início.</p>
+  <div class="form"><label style="grid-column:span 2">Nome<input id="pl_nome" placeholder="ex.: Curso de inglês"></label><label>Valor mensal<input id="pl_val" inputmode="decimal"></label><label>Categoria<select id="pl_cat">${catOpts('educacao')}</select></label><label>Início<input type="month" id="pl_ini" value="${addM(m, 1)}"></label><label>Fim (opcional)<input type="month" id="pl_fim"></label><button class="p" onclick="A.addPlan()">Planejar</button></div>
+  ${S.planejados.length ? `<div class="tw" style="margin-top:12px"><table><tr><th>Gasto</th><th>Categoria</th><th>Período</th><th class="n">Mensal</th><th class="n">Anual</th><th></th></tr>${S.planejados.map(p => `<tr><td>${esc(p.nome)}</td><td>${cat(p.cat).icone} ${esc(cat(p.cat).nome)}</td><td>${nomeMes(p.inicio, true)}/${p.inicio.slice(2, 4)} → ${p.fim ? nomeMes(p.fim, true) + '/' + p.fim.slice(2, 4) : 'sem fim'}</td><td class="n">${R(p.valor)}</td><td class="n">${R(p.valor*12)}</td><td class="n"><button class="x" onclick="A.delItem('planejados','${p.id}')">✕</button></td></tr>`).join('')}</table></div>` : ''}
+  </div>
+  <div class="card"><h2>🧮 Simulador: à vista × parcelado</h2>
+  <div class="form"><label>Preço (R$)<input id="sv_p" inputmode="decimal" value="3000" oninput="A.simular()"></label><label>Desconto à vista (%)<input id="sv_d" inputmode="decimal" value="10" oninput="A.simular()"></label><label>Nº de parcelas<input id="sv_n" inputmode="numeric" value="10" oninput="A.simular()"></label><label>Juros ao mês (%)<input id="sv_j" inputmode="decimal" value="0" oninput="A.simular()"></label><label>Rendimento da reserva (% a.m.)<input id="sv_r" inputmode="decimal" value="0,9" oninput="A.simular()"></label></div>
+  <div id="simOut" style="margin-top:12px"></div></div>
+  <div class="card"><h2>🎯 Quanto preciso guardar?</h2>
+  <div class="form"><label>Objetivo (R$)<input id="sg_v" inputmode="decimal" value="10000" oninput="A.simMeta()"></label><label>Prazo (meses)<input id="sg_n" inputmode="numeric" value="12" oninput="A.simMeta()"></label><label>Rendimento (% a.m.)<input id="sg_r" inputmode="decimal" value="0,9" oninput="A.simMeta()"></label></div>
+  <div id="metaOut" style="margin-top:12px"></div></div>`;
+};
+
+V.tarifas = () => {
+  const ctr = S.contratos, eco = sum(ctr.filter(c => c.valorAlt > 0 && c.valorAlt < c.valor).map(c => c.valor - c.valorAlt));
+  return head('Otimização de tarifas', 'Pagar menos pelo mesmo serviço: renegociar, trocar de fornecedor e usar compromissos (planos anuais) — como "Reserved Instances" e "Savings Plans" na nuvem.', 'Otimizar') + `
+  <div class="grid g3 mb">${kpi('Contratos monitorados', ctr.length)}${kpi('Custo mensal', R0(sum(ctr.map(c => c.valor))))}${kpi('Economia potencial', R0(eco) + '/mês', R0(eco*12) + ' por ano', 'ok')}</div>
+  <div class="card"><h2>Contratos & fornecedores</h2>
+  <div class="form"><label>Serviço<input id="ct_nome" placeholder="ex.: Internet fibra"></label><label>Fornecedor atual<input id="ct_forn" placeholder="ex.: Operadora A"></label><label>Valor atual (mês)<input id="ct_val" inputmode="decimal"></label><label>Alternativa cotada<input id="ct_alt" placeholder="ex.: Operadora B 500MB"></label><label>Valor alternativa<input id="ct_valt" inputmode="decimal"></label><label>Fim da fidelidade<input type="date" id="ct_venc"></label><button class="p" onclick="A.addContrato()">Adicionar</button></div>
+  ${ctr.length ? `<div class="tw" style="margin-top:12px"><table><tr><th>Serviço</th><th>Atual</th><th>Alternativa</th><th class="n">Economia/mês</th><th>Fidelidade</th><th></th></tr>
+  ${ctr.map(c => { const e = c.valorAlt > 0 ? c.valor - c.valorAlt : 0; const venc = c.venc && c.venc < HOJE ? '<span class="tag o">livre</span>' : c.venc ? dataBR(c.venc) : '—'; return `<tr><td><b>${esc(c.nome)}</b></td><td>${esc(c.fornecedor)}<div>${R(c.valor)}</div></td><td>${esc(c.alternativa || '—')}<div>${c.valorAlt ? R(c.valorAlt) : '<button class="s" onclick="A.cotar(\'' + c.id + '\')">cotar</button>'}</div></td><td class="n ${e > 0 ? 'ok' : ''}">${e > 0 ? R(e) : '—'}</td><td>${venc}</td><td class="n"><button class="x" onclick="A.cotar('${c.id}')">✏️</button><button class="x" onclick="A.delItem('contratos','${c.id}')">✕</button></td></tr>`; }).join('')}</table></div>` : '<div class="empty">Cadastre internet, celular, seguros, plano de saúde, energia (mercado livre/solar por assinatura), banco…</div>'}
+  </div>
+  <div class="grid g2">
+    <div class="card"><h2>💳 Plano anual × mensal (compromisso)</h2><div class="form"><label>Mensal (R$)<input id="pa_m" inputmode="decimal" value="55,90" oninput="A.simAnual()"></label><label>Anual (R$)<input id="pa_a" inputmode="decimal" value="559" oninput="A.simAnual()"></label><label>Meses que vai usar<input id="pa_u" inputmode="numeric" value="12" oninput="A.simAnual()"></label></div><div id="anualOut" style="margin-top:10px"></div></div>
+    <div class="card"><h2>📋 Checklist de tarifas</h2><ul class="muted" style="margin:0;padding-left:18px;font-size:14px">
+      <li>Pacote bancário: peça isenção ou migre para conta digital gratuita.</li>
+      <li>Cartão: negocie anuidade zero; pague a fatura integral (rotativo é o "on-demand" mais caro que existe).</li>
+      <li>Internet/celular: ligue no fim da fidelidade e peça a oferta de retenção.</li>
+      <li>Seguros: recote todo ano (auto, residencial, vida).</li>
+      <li>Energia: verifique tarifa branca, energia solar por assinatura e bandeira tarifária.</li>
+      <li>Compras recorrentes (mercado, farmácia): programas de fidelidade e atacarejo = "desconto por volume".</li></ul></div>
+  </div>`;
+};
+
+V.consumo = () => {
+  const np = pessoas(), m = MES;
+  const tipos = ['energia', 'agua', 'gas'];
+  const en = S.consumos.filter(c => c.tipo === 'energia');
+  const co2 = sum(en.filter(c => c.mes.slice(0, 4) === m.slice(0, 4)).map(c => c.qtd)) * (S.casa.fatorCO2 || 0);
+  return head('Consumo & Sustentabilidade', 'Otimização de uso (rightsizing): usar só o necessário. Registre as leituras das contas e compare por pessoa.', 'Otimizar') + `
+  <div class="card"><h2>Registrar leitura da conta</h2>
+  <div class="form"><label>Mês<input type="month" id="cs_mes" value="${m}"></label><label>Tipo<select id="cs_tipo"><option value="energia">⚡ Energia (kWh)</option><option value="agua">💧 Água (m³)</option><option value="gas">🔥 Gás (m³ ou kg)</option></select></label><label>Quantidade<input id="cs_qtd" inputmode="decimal"></label><label>Valor da conta (R$)<input id="cs_custo" inputmode="decimal"></label><button class="p" onclick="A.addConsumo()">Salvar</button></div></div>
+  <div class="grid g3 mb">${tipos.map(t => { const ref = consumoRef(t), regs = S.consumos.filter(c => c.tipo === t).sort((a, b) => a.mes.localeCompare(b.mes)), u = regs[regs.length - 1], pp = u ? u.qtd/np : 0, ant = regs[regs.length - 2];
+    return `<div class="card kpi"><div class="l">${ref.ic} ${ref.nome}</div><div class="v ${pp > ref.ref*1.2 ? 'warn' : pp ? 'ok' : ''}">${u ? N(pp) + ' ' + ref.un : '—'}<small style="font-size:12px"> /pessoa</small></div><div class="d">${u ? `${nomeMes(u.mes, true)}: ${N(u.qtd)} ${ref.un} · ${R(u.custo)}${ant ? ` · ${u.qtd >= ant.qtd ? '▲' : '▼'} ${P(Math.abs(u.qtd/ant.qtd - 1)*100)}` : ''}` : 'sem leitura'}<br>referência ~${ref.ref} ${ref.un}/pessoa/mês</div></div>`; }).join('')}</div>
+  ${S.consumos.length ? `<div class="card"><h2>Histórico</h2><div class="tw"><table><tr><th>Mês</th><th>Tipo</th><th class="n">Quantidade</th><th class="n">Por pessoa</th><th class="n">Valor</th><th class="n">R$/unidade</th><th></th></tr>
+  ${[...S.consumos].sort((a, b) => b.mes.localeCompare(a.mes) || a.tipo.localeCompare(b.tipo)).slice(0, 36).map(c => { const r = consumoRef(c.tipo); return `<tr><td>${nomeMes(c.mes, true)}/${c.mes.slice(2, 4)}</td><td>${r.ic} ${r.nome}</td><td class="n">${N(c.qtd)} ${r.un}</td><td class="n">${N(c.qtd/np)}</td><td class="n">${R(c.custo)}</td><td class="n">${c.qtd ? R(c.custo/c.qtd) : '—'}</td><td class="n"><button class="x" onclick="A.delItem('consumos','${c.id}')">✕</button></td></tr>`; }).join('')}</table></div></div>` : ''}
+  <div class="grid g2">
+    <div class="card"><h2>🏗️ Payback de melhorias (arquitetura)</h2><p class="muted" style="font-size:13.5px;margin-top:0">Troca de lâmpadas por LED, geladeira eficiente, aquecedor solar, arejadores de torneira…</p>
+      <div class="form"><label>Investimento (R$)<input id="pb_inv" inputmode="decimal" value="1200" oninput="A.payback()"></label><label>Economia mensal (R$)<input id="pb_eco" inputmode="decimal" value="60" oninput="A.payback()"></label><label>Vida útil (anos)<input id="pb_vida" inputmode="numeric" value="8" oninput="A.payback()"></label></div><div id="pbOut" style="margin-top:10px"></div></div>
+    <div class="card"><h2>🌱 Sustentabilidade</h2><div class="kpi"><div class="l">Pegada de CO₂ da energia em ${m.slice(0, 4)}</div><div class="v">${N(co2, 0)} kg CO₂</div><div class="d">fator ${N(S.casa.fatorCO2, 3)} kg/kWh (ajustável em <a href="#config">Casa & Dados</a>) · equivale a ~${N(co2/7, 0)} árvores/ano</div></div>
+      <h2 style="margin-top:14px">Dicas de uso</h2><ul class="muted" style="margin:0;padding-left:18px;font-size:14px"><li>Chuveiro elétrico é o maior vilão: banhos de 5 min e posição "verão".</li><li>Desligue aparelhos em stand-by (o "recurso ocioso" da casa).</li><li>Ar-condicionado em 23–24 °C com portas fechadas.</li><li>Máquina de lavar sempre cheia; geladeira longe do fogão e do sol.</li><li>Vazamentos: feche tudo e veja se o hidrômetro gira.</li></ul></div>
+  </div>`;
+};
+
+V.assinaturas = () => {
+  const a = S.assinaturas, tot = sum(a.map(mensalAss));
+  const ocioso = sum(a.filter(x => x.uso === 'nenhum' || x.uso === 'baixo').map(mensalAss));
+  const usoTag = {alto:'o', medio:'i', baixo:'w', nenhum:'b'};
+  return head('Licenças & SaaS', 'Inventário de assinaturas: quanto custam, quem usa e o que está ocioso (desperdício).', 'Otimizar') + `
+  <div class="grid g4 mb">${kpi('Assinaturas', a.length)}${kpi('Custo mensal', R0(tot), R0(tot*12) + ' por ano')}${kpi('Ocioso (baixo/nenhum uso)', R0(ocioso), tot ? P(ocioso/tot*100) + ' do total' : '', ocioso ? 'warn' : 'ok')}${kpi('Taxa de utilização', tot ? P((tot - ocioso)/tot*100) : '—', 'custo com uso médio/alto')}</div>
+  <div class="card"><h2>Adicionar assinatura</h2><div class="form"><label>Nome<input id="as_nome" placeholder="ex.: Netflix"></label><label>Valor (R$)<input id="as_val" inputmode="decimal"></label><label>Cobrança<select id="as_ciclo"><option value="mensal">Mensal</option><option value="anual">Anual</option></select></label><label>Uso (30 dias)<select id="as_uso"><option value="alto">Alto</option><option value="medio">Médio</option><option value="baixo">Baixo</option><option value="nenhum">Nenhum</option></select></label><label>Dono<select id="as_dono">${quemOpts('casa')}</select></label><label>Renovação<input type="date" id="as_ren"></label><button class="p" onclick="A.addAss()">Adicionar</button></div>
+  <p class="muted" style="font-size:13px;margin-bottom:0">Dica: procure no extrato por cobranças recorrentes da categoria 📺 — este mês somam ${R(porCat(MES).assinaturas || 0)}.</p></div>
+  <div class="card">${a.length ? `<div class="tw"><table><tr><th>Assinatura</th><th>Dono</th><th>Uso</th><th class="n">Valor</th><th class="n">Mensal eq.</th><th class="n">Anual</th><th>Renova</th><th></th></tr>
+  ${[...a].sort((x, y) => mensalAss(y) - mensalAss(x)).map(x => `<tr><td><b>${esc(x.nome)}</b></td><td class="muted">${esc(nomeQuem(x.dono))}</td><td><select style="width:auto;padding:3px 6px;font-size:13px" onchange="A.setUso('${x.id}',this.value)">${['alto','medio','baixo','nenhum'].map(u => `<option ${u === x.uso ? 'selected' : ''} value="${u}">${u === 'medio' ? 'médio' : u}</option>`).join('')}</select> <span class="tag ${usoTag[x.uso]}">●</span></td><td class="n">${R(x.valor)}<div class="muted" style="font-size:12px">${x.ciclo}</div></td><td class="n">${R(mensalAss(x))}</td><td class="n">${R(mensalAss(x)*12)}</td><td>${x.renov ? dataBR(x.renov) : '—'}</td><td class="n"><button class="x" title="Cancelei" onclick="A.cancelarAss('${x.id}')">🚫</button><button class="x" onclick="A.delItem('assinaturas','${x.id}')">✕</button></td></tr>`).join('')}</table></div><p class="muted" style="font-size:13px">🚫 = "cancelei": remove do inventário e registra a economia em Valor & Metas.</p>` : '<div class="empty">Liste streaming, música, nuvem, academia, apps, clubes de assinatura…</div>'}</div>`;
+};
+
+V.recomendacoes = () => {
+  const rc = recomendacoes(MES), pend = rc.filter(r => !r.status);
+  const areaTag = {'Licenças & SaaS':'i', 'Otimização de tarifas':'o', 'Otimização de uso':'w', 'Eliminar desperdício':'b', 'Orçamento':''};
+  return head('Recomendações', 'Oportunidades de economia geradas automaticamente a partir de assinaturas, contratos, consumo, tarifas e orçamento.', 'Otimizar') + `
+  <div class="grid g3 mb">${kpi('Pendentes', pend.length)}${kpi('Economia potencial', R0(sum(pend.map(r => r.eco))) + '/mês', R0(sum(pend.map(r => r.eco))*12) + ' por ano', 'ok')}${kpi('Economia já realizada', R0(sum(S.economias.map(e => e.valor))) + '/mês', '<a href="#valor">ver histórico</a>')}</div>
+  <div class="card">${rc.length ? rc.map(r => `<div class="alert ${r.status ? '' : 'i'}" style="${r.status ? 'opacity:.55;background:var(--panel2)' : ''}"><span>✨</span><div class="t"><b>${esc(r.titulo)}</b> <span class="tag ${areaTag[r.area] ?? ''}">${r.area}</span> <span class="tag">esforço ${r.esf}</span><br><span class="muted">${r.det}</span><br><b class="ok">≈ ${R(r.eco)}/mês</b></div>
+    ${r.status ? `<span class="tag">${r.status === 'feito' ? 'aplicada ✓' : 'ignorada'}</span>` : `<div class="row" style="flex-direction:column;align-items:stretch"><button class="s p" onclick="A.recFeita('${r.k}')">Apliquei</button><button class="s" onclick="A.recIgnorar('${r.k}')">Ignorar</button></div>`}</div>`).join('') : '<div class="empty">Sem recomendações. Cadastre assinaturas, contratos e leituras de consumo para o motor encontrar economias.</div>'}</div>`;
+};
+
+V.governanca = () => {
+  const rg = S.regras, vi = violacoes(MES);
+  const campo = (k, l, suf) => `<label>${l}<input inputmode="decimal" value="${N(rg[k], 2)}" onchange="A.setRegra('${k}',this.value)"></label>`;
+  return head('Políticas & Governança', 'As regras da casa, combinadas por todos, e o que está fora delas neste mês.', 'Operar') + `
+  <div class="card"><h2>Situação em ${nomeMes(MES)}</h2>${vi.length ? vi.map(v => `<div class="alert ${v.sev}"><span>${v.sev === 'b' ? '⛔' : '⚠️'}</span><div class="t"><b>${esc(v.pol)}</b><br>${esc(v.txt)}</div>${v.acao || ''}</div>`).join('') : '<div class="alert o"><span>✅</span><div class="t">Todas as políticas estão sendo cumpridas.</div></div>'}</div>
+  <div class="card"><h2>Regras da casa</h2><div class="form">
+    ${campo('limiteCompra', 'Compra variável acima de (R$) precisa de aprovação')}
+    ${campo('alertaOrc', 'Alertar ao atingir (% do orçamento)')}
+    ${campo('anomaliaPct', 'Anomalia: categoria acima da média em (%)')}
+    ${campo('essencialMax', 'Essenciais: máximo (% da renda)')}
+    ${campo('estiloMax', 'Estilo de vida: máximo (% da renda)')}
+    ${campo('poupancaMin', 'Poupança: mínimo (% da renda)')}
+    ${campo('moradiaMax', 'Moradia: máximo (% da renda)')}
+  </div></div>
+  <div class="card"><h2>Regras de categorização automática</h2><p class="muted" style="font-size:13.5px;margin-top:0">Se a descrição contém algum dos termos (separados por |), o gasto recebe a categoria. É o "tagging policy" da casa.</p>
+  <div class="tw"><table><tr><th>Termos</th><th>Categoria</th><th></th></tr>${S.autoCat.map(([p, c], i) => `<tr><td style="font-family:ui-monospace,monospace;font-size:12.5px;word-break:break-word">${esc(p)}</td><td>${cat(c).icone} ${esc(cat(c).nome)}</td><td class="n"><button class="x" onclick="A.delAuto(${i})">✕</button></td></tr>`).join('')}</table></div>
+  <div class="row" style="margin-top:10px"><input id="au_p" placeholder="ex.: academia xyz|pilates" style="flex:2;min-width:160px"><select id="au_c" style="flex:1;min-width:140px">${catOpts()}</select><button onclick="A.addAuto()">Adicionar</button><button class="p" onclick="A.reaplicar()">Recategorizar "sem categoria"</button></div></div>`;
+};
+
+V.valor = () => {
+  const ec = S.economias, tot = sum(ec.map(e => e.valor));
+  const ess = (() => { const ms = meses(addM(HOJE_YM, -1), 3).filter(x => txMes(x).length); if (!ms.length) return 0; return sum(ms.map(x => grupos(x).essencial))/ms.length; })();
+  const cob = ess ? S.casa.reserva/ess : 0;
+  return head('Valor & Metas', 'Quantificar o valor do FinOps: quanto já economizamos e para onde esse dinheiro está indo.', 'Operar') + `
+  <div class="grid g4 mb">${kpi('Economia recorrente', R0(tot) + '/mês', R0(tot*12) + ' por ano', 'ok')}${kpi('Ações aplicadas', ec.length)}${kpi('Reserva de emergência', R0(S.casa.reserva), `<a href="javascript:A.editReserva()">atualizar</a>`)}${kpi('Cobertura da reserva', ess ? N(cob) + ' meses' : '—', 'de gastos essenciais (ideal: 6)', cob >= 6 ? 'ok' : 'warn')}</div>
+  <div class="card"><h2>🎯 Metas</h2>
+  <div class="form"><label style="grid-column:span 2">Meta<input id="mt_nome" placeholder="ex.: Viagem de férias"></label><label>Valor alvo<input id="mt_alvo" inputmode="decimal"></label><label>Já tenho<input id="mt_atual" inputmode="decimal" value="0"></label><label>Prazo<input type="month" id="mt_prazo" value="${addM(HOJE_YM, 12)}"></label><button class="p" onclick="A.addMeta()">Criar</button></div>
+  ${S.metas.map(x => { const f = Math.max(0, x.alvo - x.atual), mr = Math.max(1, (() => { const [a, b] = x.prazo.split('-').map(Number), [c, d] = HOJE_YM.split('-').map(Number); return (a - c)*12 + b - d; })()); return `<div style="margin-top:14px"><div class="row"><b>${esc(x.nome)}</b><span class="muted">${R0(x.atual)} de ${R0(x.alvo)} · até ${nomeMes(x.prazo)}</span><span class="sp"></span><button class="s" onclick="A.aportar('${x.id}')">+ Aporte</button><button class="x" onclick="A.delItem('metas','${x.id}')">✕</button></div><div class="bar" style="height:12px;margin:6px 0"><i class="o" style="width:${Math.min(100, x.atual/x.alvo*100)}%"></i></div><div class="muted" style="font-size:13px">${f > 0 ? `Faltam ${R(f)} → guardar ${R(f/mr)}/mês por ${mr} mês(es)` : '🎉 Meta atingida!'}</div></div>`; }).join('') || '<div class="empty">Crie metas para dar destino às economias.</div>'}</div>
+  <div class="card"><div class="row mb"><h2 style="margin:0">💰 Economias realizadas</h2><span class="sp"></span><button class="s" onclick="A.addEconomia()">+ Registrar economia</button></div>
+  ${ec.length ? `<div class="tw"><table><tr><th>Data</th><th>Ação</th><th class="n">Por mês</th><th class="n">Por ano</th><th></th></tr>${[...ec].reverse().map(e => `<tr><td>${dataBR(e.data)}</td><td>${esc(e.desc)}</td><td class="n ok">${R(e.valor)}</td><td class="n">${R(e.valor*12)}</td><td class="n"><button class="x" onclick="A.delItem('economias','${e.id}')">✕</button></td></tr>`).join('')}</table></div>` : '<div class="empty">Marque recomendações como "Apliquei" ou registre economias manualmente.</div>'}</div>`;
+};
+
+V.benchmark = () => {
+  const m = MES, rd = renda(), g = grupos(m, true), pv = previsao(m), poup = rd - pv.total;
+  const pc = porCat(m), hist = mediaCat(m, 6);
+  const bm = [
+    ['Essenciais', rd ? g.essencial/rd*100 : 0, S.regras.essencialMax, true],
+    ['Estilo de vida', rd ? g.estilo/rd*100 : 0, S.regras.estiloMax, true],
+    ['Poupança/investimento', rd ? poup/rd*100 : 0, S.regras.poupancaMin, false],
+    ['Moradia', rd ? (pv.det.moradia || 0)/rd*100 : 0, S.regras.moradiaMax, true],
+  ];
+  const cats = S.categorias.filter(c => pc[c.id] || hist[c.id]);
+  return head('Benchmarking', 'Comparação com referências de mercado (regra 50/30/20) e com o próprio histórico da casa.', 'Operar') + `
+  <div class="card"><h2>Regra 50/30/20 e moradia (previsão do mês)</h2>${rd ? bm.map(([l, v, ref, max]) => { const ok = max ? v <= ref : v >= ref; return `<div class="hb"><span>${l}</span><div class="bar" style="position:relative"><i class="${ok ? 'o' : 'w'}" style="width:${Math.max(0, Math.min(100, v))}%"></i><span style="position:absolute;left:${ref}%;top:-3px;bottom:-3px;border-left:2px dashed var(--ink)"></span></div><b>${P(v)} <span class="muted" style="font-weight:400">${max ? '≤' : '≥'}${ref}%</span></b></div>`; }).join('') : '<div class="empty"><a href="#config">Informe a renda dos moradores</a> para comparar.</div>'}
+  <p class="muted" style="font-size:13px;margin-bottom:0">Linha tracejada = referência (ajustável em Políticas). Referências são regras práticas, não verdades absolutas.</p></div>
+  <div class="card"><h2>${nomeMes(m)} × média dos 6 meses anteriores</h2><div class="tw"><table><tr><th>Categoria</th><th class="n">Média</th><th class="n">Este mês</th><th class="n">Diferença</th></tr>
+  ${cats.map(c => { const a = hist[c.id] || 0, b = pc[c.id] || 0, d = b - a; return `<tr><td>${c.icone} ${esc(c.nome)}</td><td class="n">${R(a)}</td><td class="n">${R(b)}</td><td class="n ${d > 0 ? 'bad' : 'ok'}">${d > 0 ? '+' : ''}${R(d)}${a ? ` (${P(d/a*100)})` : ''}</td></tr>`; }).join('') || '<tr><td colspan="4" class="empty">Sem dados.</td></tr>'}</table></div>
+  ${m === HOJE_YM ? '<p class="muted" style="font-size:13px">Mês em andamento: valores ainda parciais.</p>' : ''}</div>
+  <div class="card"><h2>Referências de consumo por pessoa</h2><table><tr><th>Item</th><th>Referência prática</th></tr><tr><td>⚡ Energia</td><td>~100 kWh/pessoa/mês</td></tr><tr><td>💧 Água</td><td>~110–130 litros/pessoa/dia (≈ 4 m³/mês)</td></tr><tr><td>🏠 Moradia</td><td>até ~30% da renda</td></tr><tr><td>🛟 Reserva</td><td>6 meses de gastos essenciais</td></tr></table></div>`;
+};
+
+V.ritual = () => {
+  const m = MES, st = S.ritual[m] || {}, feitos = RITUAL.filter(r => st[r[0]]).length;
+  return head('Ritual mensal', 'Operações da prática FinOps: 15–30 minutos por mês, sempre na mesma data (sugestão: até o dia 5).', 'Operar') + `
+  <div class="card"><div class="row"><h2 style="margin:0">Checklist de ${nomeMes(m)}</h2><span class="sp"></span><b>${feitos}/${RITUAL.length}</b></div>
+  <div class="bar" style="height:12px;margin:10px 0"><i class="o" style="width:${feitos/RITUAL.length*100}%"></i></div>
+  ${RITUAL.map(([k, t, r, cap]) => `<label class="check" style="color:var(--ink);font-size:14.5px"><input type="checkbox" ${st[k] ? 'checked' : ''} onchange="A.ritual('${k}',this.checked)"><span class="t">${t}<br><span class="tag">${cap}</span></span><a href="#${r}" onclick="event.stopPropagation()">abrir →</a></label>`).join('')}
+  ${feitos === RITUAL.length ? '<div class="alert o" style="margin-top:12px"><span>🏆</span><div class="t">Ciclo FinOps do mês completo! Informar → Otimizar → Operar.</div></div>' : ''}</div>
+  <div class="card"><h2>Pauta da conversa em família (15 min)</h2><ol class="muted" style="margin:0;padding-left:20px"><li>Como fechamos o mês? (Painel)</li><li>O que saiu do padrão e por quê? (Anomalias)</li><li>Qual economia vamos aplicar agora? (Recomendações)</li><li>Como estão nossas metas? (Valor & Metas)</li><li>Alguma regra da casa precisa mudar? (Políticas)</li></ol></div>`;
+};
+
+V.maturidade = () => {
+  const mt = maturidade();
+  const fases = ['Informar', 'Otimizar', 'Operar'];
+  return head('Avaliação de maturidade', 'Modelo Engatinhar → Andar → Correr do FinOps aplicado à casa. Cada critério atendido soma pontos.', 'Operar') + `
+  <div class="card"><div class="row"><h2 style="margin:0">Pontuação: ${mt.score}/100</h2></div><div class="lvl" style="margin-top:10px">${['🐣 Engatinhar (0–39)','🚶 Andar (40–74)','🏃 Correr (75–100)'].map((x, i) => `<span class="${i === mt.nivel ? 'on' : ''}">${x}</span>`).join('')}</div></div>
+  <div class="grid g3">${fases.map(f => { const cs = mt.c.filter(c => c[0] === f); return `<div class="card"><h2>${f} <span class="tag ${cs.every(c => c[2]) ? 'o' : 'w'}">${cs.filter(c => c[2]).length}/${cs.length}</span></h2>${cs.map(c => `<div class="check"><span>${c[2] ? '✅' : '⬜'}</span><span class="t" style="font-size:14px">${c[1]}</span>${c[2] ? '' : `<a href="#${c[3]}">fazer</a>`}</div>`).join('')}</div>`; }).join('')}</div>`;
+};
+
+V.aprender = () => `${head('Educação & Capacitação', 'FinOps para a família: princípios, vocabulário e papéis.', 'Operar')}
+  <div class="card"><h2>Os 6 princípios do FinOps — versão casa</h2><ol style="margin:0;padding-left:20px;line-height:1.7">
+    <li><b>Times precisam colaborar</b> — finanças da casa são de todos, não de uma pessoa só.</li>
+    <li><b>Decisões guiadas pelo valor</b> — gastar não é ruim; ruim é gastar com o que não traz valor para a família.</li>
+    <li><b>Todos são donos do seu consumo</b> — cada morador vê o próprio showback.</li>
+    <li><b>Dados acessíveis, no tempo certo e precisos</b> — lançar no dia, revisar no mês.</li>
+    <li><b>Um time central facilita</b> — alguém conduz o ritual, mas todos participam.</li>
+    <li><b>Aproveitar o modelo de custo variável</b> — trocar, pausar, renegociar e cancelar sempre que fizer sentido.</li></ol></div>
+  <div class="card"><h2>Glossário FinOps → casa</h2><div class="tw"><table><tr><th>Termo</th><th>Na empresa</th><th>Na casa</th></tr>
+    ${[['Showback','Mostrar o custo de cada time','Quanto cada morador consome'],['Chargeback','Cobrar cada time pelo que usa','O acerto de contas entre moradores'],['Tagging / Alocação','Marcar recursos por dono/projeto','Categoria + quem consumiu'],['Rightsizing','Diminuir máquinas superdimensionadas','Plano de internet/celular maior que o necessário'],['Recurso ocioso','Servidor ligado sem uso','Assinatura que ninguém usa, aparelho em stand-by'],['Reserva / Savings Plan','Compromisso de uso com desconto','Plano anual, compra em atacado, pacote de serviços'],['Spot','Capacidade barata e interrompível','Promoções, horários de tarifa baixa, ofertas relâmpago'],['On-demand','Preço cheio sem compromisso','Rotativo do cartão, compra por impulso'],['Forecast','Prever o custo futuro','Previsão de fechamento do mês'],['Anomalia','Pico inesperado de custo','Conta de luz dobrada, cobrança duplicada'],['Unit economics','Custo por cliente/transação','Custo por morador, por m², R$/kWh'],['Crawl/Walk/Run','Níveis de maturidade','Engatinhar/Andar/Correr']].map(r => `<tr><td><b>${r[0]}</b></td><td class="muted">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table></div></div>
+  <div class="grid g2">
+    <div class="card"><h2>Papéis na família (personas)</h2><ul style="margin:0;padding-left:18px;line-height:1.7"><li><b>Praticante FinOps</b>: conduz o ritual e mantém os dados em dia.</li><li><b>Executivos</b> (adultos): aprovam políticas, metas e compras grandes.</li><li><b>Engenharia</b> (todos): mudam hábitos de consumo.</li><li><b>Compras</b>: quem negocia contratos e cota alternativas.</li><li><b>Finanças</b>: quem cuida da reserva e dos investimentos.</li></ul></div>
+    <div class="card"><h2>Disciplinas que se cruzam</h2><ul style="margin:0;padding-left:18px;line-height:1.7"><li><b>Impostos</b>: guarde recibos de saúde e educação para o IR.</li><li><b>Seguros</b>: protegem o "ambiente de produção" (casa, carro, vida).</li><li><b>Investimentos</b>: o destino da poupança gerada pelo FinOps.</li><li><b>Sustentabilidade</b>: menos consumo = menos custo e menos CO₂.</li><li><b>Segurança</b>: golpes e cobranças indevidas são anomalias.</li></ul></div>
+  </div>`;
+
+V.config = () => `${head('Casa & Dados', 'Ferramentas & serviços: configure a casa e gerencie seus dados (tudo fica salvo só neste navegador).')}
+  <div class="card"><h2>🏠 Casa</h2><div class="form"><label>Nome<input id="cf_nome" value="${esc(S.casa.nome)}"></label><label>Área (m²)<input id="cf_area" inputmode="decimal" value="${N(S.casa.area, 2)}"></label><label>Reserva de emergência (R$)<input id="cf_res" inputmode="decimal" value="${N(S.casa.reserva, 2)}"></label><label>Fator CO₂ (kg/kWh)<input id="cf_co2" inputmode="decimal" value="${N(S.casa.fatorCO2, 3)}"></label><button class="p" onclick="A.salvarCasa()">Salvar</button></div></div>
+  <div class="card"><h2>👨‍👩‍👧 Moradores</h2><p class="muted" style="font-size:13.5px;margin-top:0"><b>Peso</b> define a fatia de cada um nos gastos compartilhados (1 = parte inteira, 0,5 = meia). <b>Renda</b> líquida mensal alimenta poupança, benchmarks e políticas.</p>
+  <div class="tw"><table><tr><th>Nome</th><th class="n">Peso</th><th class="n">Renda mensal</th><th></th></tr>${S.moradores.map(x => `<tr><td><input value="${esc(x.nome)}" onchange="A.setMorador('${x.id}','nome',this.value)"></td><td class="n"><input inputmode="decimal" style="width:80px;text-align:right" value="${N(x.peso, 2)}" onchange="A.setMorador('${x.id}','peso',this.value)"></td><td class="n"><input inputmode="decimal" style="width:120px;text-align:right" value="${N(x.renda, 2)}" onchange="A.setMorador('${x.id}','renda',this.value)"></td><td class="n">${S.moradores.length > 1 ? `<button class="x" onclick="A.delMorador('${x.id}')">✕</button>` : ''}</td></tr>`).join('')}</table></div>
+  <div class="row" style="margin-top:10px"><button onclick="A.addMorador()">+ Morador</button><button class="s" onclick="A.pesoRenda()">Ajustar pesos pela renda</button></div></div>
+  <div class="card"><h2>🗂️ Categorias</h2><div class="tw"><table><tr><th>Categoria</th><th>Tipo</th><th>Grupo (50/30/20)</th></tr>${S.categorias.map(c => `<tr><td>${c.icone} ${esc(c.nome)}</td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','tipo',this.value)"><option value="fixo" ${c.tipo === 'fixo' ? 'selected' : ''}>Fixo</option><option value="variavel" ${c.tipo === 'variavel' ? 'selected' : ''}>Variável</option></select></td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','grupo',this.value)"><option value="essencial" ${c.grupo === 'essencial' ? 'selected' : ''}>Essencial</option><option value="estilo" ${c.grupo === 'estilo' ? 'selected' : ''}>Estilo de vida</option></select></td></tr>`).join('')}</table></div>
+  <div class="row" style="margin-top:10px"><input id="nc_ic" placeholder="🎸" style="width:60px"><input id="nc_nome" placeholder="Nova categoria" style="flex:1;min-width:140px"><button onclick="A.addCat()">Adicionar</button></div></div>
+  <div class="card"><h2>💾 Dados</h2><p class="muted" style="font-size:13.5px;margin-top:0">Os dados ficam apenas neste navegador. Faça backup periodicamente — e use o arquivo para levar os dados a outro aparelho.</p>
+  <div class="row"><button class="p" onclick="A.exportar()">⬇ Backup (JSON)</button><label class="btn" style="color:var(--ink);font-size:14px">⬆ Restaurar backup<input type="file" accept=".json" style="display:none" onchange="A.restaurar(this)"></label><button onclick="A.csvTudo()">⬇ Todos os gastos (CSV)</button><button onclick="A.exemplo()">Carregar exemplo</button><button onclick="A.tema()">🌓 Tema</button><span class="sp"></span><button style="color:var(--bad)" onclick="A.zerar()">Apagar tudo</button></div></div>`;
+
+/* ====================== Ações ====================== */
+function autoCategoria(desc){
+  const d = ' ' + String(desc).toLowerCase() + ' ';
+  for (const [p, c] of S.autoCat){ if (p.split('|').some(t => t && d.includes(t.toLowerCase()))) return c; }
+  return 'outros';
+}
+function addTx(t){ S.transacoes.push({id:uid(), aprovada:false, fonte:'manual', quem:'casa', pagou:S.moradores[0]?.id, ...t}); }
+
+function dialog(titulo, corpo, botoes){
+  const d = $('#dlg');
+  d.innerHTML = `<div class="hd">${titulo}<span class="sp"></span><button class="x" onclick="$('#dlg').close()">✕</button></div><div class="bd">${corpo}</div><div class="ft">${botoes}</div>`;
+  d.showModal();
+}
+
+const A = {
+  mes(k){ MES = addM(MES, k); render(); },
+  sugCat(desc, id){ const c = autoCategoria(desc); if (c !== 'outros') document.getElementById(id).value = c; },
+  novoGasto(){ A.editar(null); },
+  editar(id){
+    const t = id ? S.transacoes.find(x => x.id === id) : {data: MES === HOJE_YM ? HOJE : `${MES}-01`, desc:'', valor:'', cat:'outros', quem:'casa', pagou:S.moradores[0]?.id};
+    if (!t) return;
+    dialog(id ? 'Editar gasto' : 'Lançar gasto', `
+      <label>Descrição<input id="d_desc" value="${esc(t.desc)}" oninput="A.sugCat(this.value,'d_cat')" placeholder="ex.: Conta de luz"></label>
+      <div class="form"><label>Valor (R$)<input id="d_val" inputmode="decimal" value="${t.valor !== '' ? N(t.valor, 2) : ''}"></label><label>Data<input type="date" id="d_data" value="${t.data}"></label></div>
+      <label>Categoria<select id="d_cat">${catOpts(t.cat)}</select></label>
+      <div class="form"><label>Quem consumiu<select id="d_quem">${quemOpts(t.quem)}</select></label><label>Quem pagou<select id="d_pagou">${quemOpts(t.pagou, false)}</select></label></div>
+      ${id ? `<label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="d_apr" style="width:auto" ${t.aprovada ? 'checked' : ''}> Compra aprovada pela casa</label>` : ''}`,
+      `${id ? `<button style="color:var(--bad)" onclick="A.del('${id}');$('#dlg').close()">Excluir</button><span class="sp"></span>` : ''}<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.salvarTx(${id ? `'${id}'` : 'null'})">Salvar</button>`);
+    setTimeout(() => $('#d_' + (id ? 'val' : 'desc')).focus(), 50);
+  },
+  salvarTx(id){
+    const v = numIn(val('d_val')), desc = val('d_desc') || 'Gasto';
+    if (!(v > 0)) return toast('Informe um valor maior que zero');
+    const dados = {desc, valor:v, data:val('d_data') || HOJE, cat:val('d_cat'), quem:val('d_quem'), pagou:val('d_pagou')};
+    if (id){ const t = S.transacoes.find(x => x.id === id); Object.assign(t, dados, {aprovada: !!$('#d_apr')?.checked}); }
+    else addTx(dados);
+    S.onboarded = true; save(); $('#dlg').close(); MES = ymOf(dados.data); render(); toast('Gasto salvo');
+  },
+  addRapido(){
+    const v = numIn(val('q_val'));
+    if (!(v > 0)) return toast('Informe um valor');
+    addTx({data:val('q_data') || HOJE, desc:val('q_desc') || 'Gasto', valor:v, cat:val('q_cat'), quem:val('q_quem'), pagou:val('q_pagou')});
+    S.onboarded = true; save(); render(); toast('Adicionado'); setTimeout(() => $('#q_desc')?.focus(), 30);
+  },
+  del(id){ if (!confirm('Excluir este lançamento?')) return; S.transacoes = S.transacoes.filter(t => t.id !== id); save(); render(); },
+  setCat(id, c){ const t = S.transacoes.find(x => x.id === id); t.cat = c; save(); toast('Categoria atualizada'); },
+  filtrar(c){ FILTRO.cat = c; go('lancamentos'); render(); },
+  aprovar(id){ const t = S.transacoes.find(x => x.id === id); t.aprovada = true; save(); render(); toast('Compra aprovada'); },
+  lerArquivo(inp){ const f = inp.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $('#csvTxt').value = r.result; toast('Arquivo carregado — confira e clique Importar'); }; r.readAsText(f, 'utf-8'); },
+  importar(){
+    const txt = $('#csvTxt').value.trim(); if (!txt) return toast('Cole ou escolha um CSV');
+    const linhas = txt.split(/\r?\n/).filter(l => l.trim());
+    const h = linhas[0], sep = (h.match(/;/g) || []).length >= (h.match(/,/g) || []).length ? ';' : (h.match(/\t/g) || []).length ? '\t' : ',';
+    const split = l => { const out = []; let cur = '', q = false; for (const ch of l){ if (ch === '"') q = !q; else if (ch === sep && !q){ out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out.map(s => s.trim()); };
+    const parseData = s => { s = s.trim(); let m;
+      if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return `${m[1]}-${m[2]}-${m[3]}`;
+      if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${pad2(m[2])}-${pad2(m[1])}`; }
+      return null; };
+    const parseVal = s => { s = s.replace(/R\$|\s/g, ''); if (!s) return NaN; let neg = /^-|-$|^\(.*\)$/.test(s); s = s.replace(/[()\-]/g, '');
+      if (s.includes(',') && s.includes('.')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+      else if (s.includes(',')) s = s.replace(',', '.');
+      const v = parseFloat(s); return neg ? -v : v; };
+    let cols = split(h).map(c => c.toLowerCase());
+    let iD = cols.findIndex(c => /data|date/.test(c)), iT = cols.findIndex(c => /descri|hist|lan[çc]|estabelec|title|memo/.test(c)), iV = cols.findIndex(c => /valor|amount|quantia/.test(c));
+    let rows = linhas;
+    if (iD >= 0 && iV >= 0){ rows = linhas.slice(1); if (iT < 0) iT = [0, 1, 2, 3].find(i => i !== iD && i !== iV); }
+    else { iD = 0; iT = 1; iV = 2; if (!parseData(split(h)[0] || '')) rows = linhas.slice(1); }
+    const parsed = rows.map(split).map(r => ({data:parseData(r[iD] || ''), desc:(r[iT] || '').replace(/^"|"$/g, ''), v:parseVal(r[iV] || '')})).filter(r => r.data && isFinite(r.v) && r.v !== 0);
+    const temNeg = parsed.some(r => r.v < 0);
+    const quem = val('csvQuem'), pagou = val('csvPagou');
+    let n = 0, dup = 0, ign = 0;
+    for (const r of parsed){
+      if (temNeg && r.v > 0){ ign++; continue; }
+      const v = Math.abs(r.v);
+      if (S.transacoes.some(t => t.data === r.data && Math.abs(t.valor - v) < 0.005 && t.desc === r.desc)){ dup++; continue; }
+      addTx({data:r.data, desc:r.desc || 'Importado', valor:v, cat:autoCategoria(r.desc), quem, pagou, fonte:'csv'}); n++;
+    }
+    if (!n && !dup) return toast('Nenhuma linha reconhecida. Verifique as colunas data/descrição/valor.');
+    S.onboarded = true; save();
+    const ultimo = parsed.filter(r => !(temNeg && r.v > 0)).map(r => r.data).sort().pop();
+    if (ultimo) MES = ymOf(ultimo);
+    render(); toast(`${n} importado(s) · ${dup} duplicado(s) · ${ign} crédito(s) ignorado(s)`);
+  },
+  setOrc(c, v){ const x = numIn(v); if (x > 0) S.orcamentos[c] = x; else delete S.orcamentos[c]; save(); render(); },
+  sugerirOrc(){
+    const h = mediaCat(MES, 3); if (!Object.keys(h).length) return toast('Sem histórico suficiente');
+    for (const k in h) if (k !== 'outros') S.orcamentos[k] = Math.ceil(h[k] * (cat(k).grupo === 'estilo' ? 0.9 : 1) / 10) * 10;
+    save(); render(); toast('Orçamento sugerido (estilo de vida com 10% de corte)');
+  },
+  addPlan(){ const v = num('pl_val'); if (!val('pl_nome') || !(v > 0) || !val('pl_ini')) return toast('Preencha nome, valor e início');
+    S.planejados.push({id:uid(), nome:val('pl_nome'), valor:v, cat:val('pl_cat'), inicio:val('pl_ini'), fim:val('pl_fim') || ''}); save(); render(); toast('Gasto planejado incluído na previsão'); },
+  delItem(col, id){ if (!confirm('Remover este item?')) return; S[col] = S[col].filter(x => x.id !== id); save(); render(); },
+  simular(){
+    const p = num('sv_p'), d = num('sv_d')/100, n = Math.max(1, Math.round(num('sv_n'))), j = num('sv_j')/100, r = num('sv_r')/100;
+    const vista = p * (1 - d);
+    const parc = j > 0 ? p * j / (1 - Math.pow(1 + j, -n)) : p / n;
+    const totParc = parc * n;
+    // valor presente das parcelas descontado pelo rendimento da reserva
+    const vp = r > 0 ? parc * (1 - Math.pow(1 + r, -n)) / r : totParc;
+    const melhor = vista <= vp ? 'à vista' : 'parcelado';
+    const pv = previsao(MES), orc = sum(Object.values(S.orcamentos)), folga = orc ? orc - pv.total : null;
+    $('#simOut').innerHTML = `<div class="grid g3"><div class="kpi"><div class="l">À vista</div><div class="v">${R(vista)}</div></div><div class="kpi"><div class="l">Parcelado</div><div class="v">${n}× ${R(parc)}</div><div class="d">total ${R(totParc)} · valor presente ${R(vp)}</div></div><div class="kpi"><div class="l">Melhor opção</div><div class="v ok">${melhor}</div><div class="d">diferença ${R(Math.abs(vp - vista))} em valor de hoje</div></div></div>
+      ${folga !== null ? `<div class="alert ${parc > folga ? 'w' : 'o'}" style="margin-top:10px"><span>${parc > folga ? '⚠️' : '✅'}</span><div class="t">A parcela de ${R(parc)} ${parc > folga ? 'é maior que' : 'cabe na'} folga prevista do orçamento deste mês (${R(folga)}).</div></div>` : ''}`;
+  },
+  simMeta(){ const v = num('sg_v'), n = Math.max(1, Math.round(num('sg_n'))), r = num('sg_r')/100;
+    const pm = r > 0 ? v * r / (Math.pow(1 + r, n) - 1) : v / n;
+    $('#metaOut').innerHTML = `<div class="kpi"><div class="l">Guardar por mês</div><div class="v">${R(pm)}</div><div class="d">${n} aportes · juros ganhos ${R(v - pm*n)}${renda() ? ` · ${P(pm/renda()*100)} da renda` : ''}</div></div>`; },
+  simAnual(){ const m = num('pa_m'), a = num('pa_a'), u = Math.max(1, Math.round(num('pa_u')));
+    const custoMensal = m * u, eco = custoMensal - a;
+    $('#anualOut').innerHTML = `<div class="alert ${eco > 0 ? 'o' : 'w'}"><span>${eco > 0 ? '✅' : '⚠️'}</span><div class="t">${eco > 0 ? `Plano anual compensa: economia de <b>${R(eco)}</b> (${P(eco/custoMensal*100)}).` : `Plano mensal é melhor se for usar só ${u} mês(es): diferença de <b>${R(-eco)}</b>.`}<br><span class="muted">Ponto de equilíbrio: ${m ? N(a/m) : '—'} meses de uso.</span></div></div>`; },
+  payback(){ const i = num('pb_inv'), e = num('pb_eco'), v = num('pb_vida');
+    const pb = e > 0 ? i/e : Infinity, ganho = e*12*v - i;
+    $('#pbOut').innerHTML = `<div class="grid g2"><div class="kpi"><div class="l">Payback</div><div class="v">${isFinite(pb) ? N(pb) + ' meses' : '—'}</div></div><div class="kpi"><div class="l">Ganho na vida útil</div><div class="v ${ganho > 0 ? 'ok' : 'bad'}">${R0(ganho)}</div><div class="d">ROI ${i ? P(ganho/i*100) : '—'}</div></div></div>`; },
+  addContrato(){ const v = num('ct_val'); if (!val('ct_nome') || !(v > 0)) return toast('Informe serviço e valor');
+    S.contratos.push({id:uid(), nome:val('ct_nome'), fornecedor:val('ct_forn'), valor:v, alternativa:val('ct_alt'), valorAlt:num('ct_valt'), venc:val('ct_venc')}); save(); render(); },
+  cotar(id){ const c = S.contratos.find(x => x.id === id);
+    dialog('Contrato: ' + esc(c.nome), `<div class="form"><label>Fornecedor atual<input id="e_forn" value="${esc(c.fornecedor)}"></label><label>Valor atual<input id="e_val" inputmode="decimal" value="${N(c.valor, 2)}"></label><label>Alternativa<input id="e_alt" value="${esc(c.alternativa)}"></label><label>Valor alternativa<input id="e_valt" inputmode="decimal" value="${c.valorAlt ? N(c.valorAlt, 2) : ''}"></label><label>Fim da fidelidade<input type="date" id="e_venc" value="${c.venc || ''}"></label></div>`,
+      `<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.salvarContrato('${id}')">Salvar</button>`); },
+  salvarContrato(id){ const c = S.contratos.find(x => x.id === id); Object.assign(c, {fornecedor:val('e_forn'), valor:num('e_val'), alternativa:val('e_alt'), valorAlt:num('e_valt'), venc:val('e_venc')}); save(); $('#dlg').close(); render(); },
+  addConsumo(){ const q = num('cs_qtd'); if (!(q > 0) || !val('cs_mes')) return toast('Informe mês e quantidade');
+    const t = val('cs_tipo'), m = val('cs_mes');
+    S.consumos = S.consumos.filter(c => !(c.tipo === t && c.mes === m));
+    S.consumos.push({id:uid(), mes:m, tipo:t, qtd:q, custo:num('cs_custo')}); save(); render(); toast('Leitura registrada'); },
+  addAss(){ const v = num('as_val'); if (!val('as_nome') || !(v > 0)) return toast('Informe nome e valor');
+    S.assinaturas.push({id:uid(), nome:val('as_nome'), valor:v, ciclo:val('as_ciclo'), uso:val('as_uso'), dono:val('as_dono'), renov:val('as_ren')}); save(); render(); },
+  setUso(id, u){ S.assinaturas.find(x => x.id === id).uso = u; save(); render(); },
+  cancelarAss(id){ const a = S.assinaturas.find(x => x.id === id); if (!confirm(`Registrar cancelamento de ${a.nome}?`)) return;
+    S.economias.push({id:uid(), data:HOJE, desc:`Cancelada assinatura ${a.nome}`, valor:mensalAss(a)});
+    S.assinaturas = S.assinaturas.filter(x => x.id !== id); save(); render(); toast(`Economia de ${R(mensalAss(a))}/mês registrada`); },
+  recFeita(k){ const r = recomendacoes(MES).find(x => x.k === k); S.recStatus[k] = 'feito';
+    if (r){ S.economias.push({id:uid(), data:HOJE, desc:r.titulo, valor:Math.round(r.eco*100)/100});
+      if (k.startsWith('ass-cancel-')) S.assinaturas = S.assinaturas.filter(a => a.id !== k.slice(11));
+      if (k.startsWith('ctr-')){ const c = S.contratos.find(c => k.startsWith('ctr-' + c.id + '-')); if (c){ c.valor = c.valorAlt; c.fornecedor = c.alternativa || c.fornecedor; c.alternativa = ''; c.valorAlt = 0; } }
+      if (k.startsWith('ass-anual-')){ const a = S.assinaturas.find(a => a.id === k.slice(10)); if (a){ a.ciclo = 'anual'; a.valor = Math.round(a.valor*12*0.85*100)/100; } } }
+    save(); render(); toast('Economia registrada em Valor & Metas'); },
+  recIgnorar(k){ S.recStatus[k] = 'ignorado'; save(); render(); },
+  setRegra(k, v){ S.regras[k] = numIn(v); S.onboarded = true; save(); render(); toast('Política atualizada'); },
+  addAuto(){ const p = val('au_p').toLowerCase(); if (!p) return; S.autoCat.unshift([p, val('au_c')]); save(); render(); },
+  delAuto(i){ S.autoCat.splice(i, 1); save(); render(); },
+  reaplicar(){ let n = 0; for (const t of S.transacoes) if (t.cat === 'outros'){ const c = autoCategoria(t.desc); if (c !== 'outros'){ t.cat = c; n++; } } save(); render(); toast(`${n} lançamento(s) recategorizado(s)`); },
+  addMeta(){ const a = num('mt_alvo'); if (!val('mt_nome') || !(a > 0)) return toast('Informe nome e valor alvo');
+    S.metas.push({id:uid(), nome:val('mt_nome'), alvo:a, atual:num('mt_atual'), prazo:val('mt_prazo') || addM(HOJE_YM, 12)}); save(); render(); },
+  aportar(id){ const m = S.metas.find(x => x.id === id); const v = numIn(prompt(`Quanto aportar em "${m.nome}"? (R$)`) || ''); if (v){ m.atual += v; save(); render(); } },
+  editReserva(){ const v = prompt('Valor atual da reserva de emergência (R$):', N(S.casa.reserva, 2)); if (v !== null){ S.casa.reserva = numIn(v); save(); render(); } },
+  addEconomia(){ const d = prompt('O que foi feito? (ex.: Troquei plano de celular)'); if (!d) return; const v = numIn(prompt('Economia por mês (R$):') || ''); if (!v) return;
+    S.economias.push({id:uid(), data:HOJE, desc:d, valor:v}); save(); render(); },
+  ritual(k, on){ (S.ritual[MES] = S.ritual[MES] || {})[k] = on; save(); render(); },
+  salvarCasa(){ Object.assign(S.casa, {nome:val('cf_nome') || 'Minha casa', area:num('cf_area'), reserva:num('cf_res'), fatorCO2:numIn(val('cf_co2'))}); S.onboarded = true; save(); render(); toast('Salvo'); },
+  setMorador(id, k, v){ const m = membro(id); m[k] = k === 'nome' ? v : numIn(v); S.onboarded = true; save(); toast('Salvo'); },
+  addMorador(){ S.moradores.push({id:uid(), nome:'Morador ' + (S.moradores.length + 1), peso:1, renda:0}); save(); render(); },
+  delMorador(id){ if (!confirm('Remover morador? Gastos dele passam a ser da casa.')) return;
+    S.moradores = S.moradores.filter(m => m.id !== id);
+    for (const t of S.transacoes){ if (t.quem === id) t.quem = 'casa'; if (t.pagou === id) t.pagou = S.moradores[0].id; }
+    save(); render(); },
+  pesoRenda(){ const r = renda(); if (!r) return toast('Informe a renda primeiro'); for (const m of S.moradores) m.peso = Math.round(m.renda / r * S.moradores.length * 100)/100; save(); render(); toast('Pesos proporcionais à renda'); },
+  setCatCfg(id, k, v){ cat(id)[k] = v; save(); toast('Categoria atualizada'); },
+  addCat(){ const n = val('nc_nome'); if (!n) return; const id = n.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '') + uid().slice(0, 3);
+    S.categorias.splice(S.categorias.length - 1, 0, {id, icone:val('nc_ic') || '🏷️', nome:n, tipo:'variavel', grupo:'estilo'}); save(); render(); },
+  download(nome, conteudo, tipo){ const b = new Blob([conteudo], {type:tipo}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
+  exportar(){ A.download(`finops-casa-${HOJE}.json`, JSON.stringify(S, null, 1), 'application/json'); },
+  restaurar(inp){ const f = inp.files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => { try { const d = JSON.parse(r.result); if (!d.v || !Array.isArray(d.transacoes)) throw 0; if (!confirm('Substituir os dados atuais pelo backup?')) return; S = Object.assign(defaults(), d); save(); render(); toast('Backup restaurado'); } catch(e) { toast('Arquivo inválido'); } };
+    r.readAsText(f); },
+  csv(tx){ return '﻿data;descricao;categoria;consumido_por;pago_por;valor\n' + tx.sort((a, b) => a.data.localeCompare(b.data)).map(t => [t.data, `"${t.desc.replace(/"/g, '""')}"`, cat(t.cat).nome, nomeQuem(t.quem), nomeQuem(t.pagou), N(t.valor, 2).replace(/\./g, '')].join(';')).join('\n'); },
+  csvMes(){ A.download(`gastos-${MES}.csv`, A.csv(txMes(MES)), 'text/csv'); },
+  csvTudo(){ A.download(`gastos-todos.csv`, A.csv([...S.transacoes]), 'text/csv'); },
+  zerar(){ if (!confirm('Apagar TODOS os dados deste navegador? Faça um backup antes.')) return; S = defaults(); save(); MES = HOJE_YM; go('painel'); render(); },
+  tema(){ const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem(KEY + '.tema', r.dataset.theme); } catch(e) {} },
+  wizard(){
+    dialog('Vamos configurar sua casa', `
+      <p class="muted" style="margin:0">Três perguntas e você já começa. Tudo pode ser mudado depois.</p>
+      <label>Nome da casa<input id="w_nome" value="Minha casa"></label>
+      <div class="form"><label>Área (m²)<input id="w_area" inputmode="decimal" value="70"></label><label>Renda líquida da casa (R$/mês)<input id="w_renda" inputmode="decimal" placeholder="ex.: 8000"></label></div>
+      <label>Moradores (separe por vírgula)<input id="w_mor" placeholder="ex.: Ana, Bruno, Lia"></label>`,
+      `<button onclick="$('#dlg').close()">Cancelar</button><button class="p" onclick="A.fimWizard()">Começar</button>`);
+  },
+  fimWizard(){
+    S.casa.nome = val('w_nome') || 'Minha casa'; S.casa.area = num('w_area');
+    const nomes = val('w_mor').split(',').map(s => s.trim()).filter(Boolean);
+    if (nomes.length) S.moradores = nomes.map((n, i) => ({id:'m' + (i + 1), nome:n, peso:1, renda:0}));
+    const r = num('w_renda'); if (r) S.moradores.forEach(m => m.renda = Math.round(r / S.moradores.length * 100)/100);
+    S.onboarded = true; save(); $('#dlg').close(); go('lancamentos'); render(); toast('Pronto! Lance ou importe seus primeiros gastos.');
+  },
+  exemplo(){
+    if (S.transacoes.length && !confirm('Substituir seus dados pelos dados de exemplo?')) return;
+    S = exemplo(); save(); MES = HOJE_YM; go('painel'); render(); toast('Dados de exemplo carregados');
+  },
+};
+
+function exemplo(){
+  const s = defaults(); s.onboarded = true;
+  let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  s.casa = {nome:'Casa exemplo', area:85, reserva:14000, fatorCO2:0.05};
+  s.moradores = [{id:'m1', nome:'Ana', peso:1, renda:7200}, {id:'m2', nome:'Bruno', peso:1, renda:5800}, {id:'m3', nome:'Lia (filha)', peso:0.5, renda:0}];
+  const tx = (m, d, desc, v, c, quem = 'casa', pagou = 'm1') => { const dia = Math.min(d, diasNoMes(m)); if (m === HOJE_YM && dia > hoje.getDate()) return; s.transacoes.push({id:uid(), data:`${m}-${pad2(dia)}`, desc, valor:Math.round(v*100)/100, cat:c, quem, pagou, aprovada:v > 500, fonte:'exemplo'}); };
+  for (let k = 5; k >= 0; k--){
+    const m = addM(HOJE_YM, -k), atual = k === 0;
+    tx(m, 5, 'Aluguel', 2300, 'moradia', 'casa', 'm1');
+    tx(m, 10, 'Condomínio', 640 + (k < 3 ? 30 : 0), 'moradia', 'casa', 'm2');
+    const kwh = Math.round(250 + rnd()*60 + (atual ? 160 : 0)), luz = kwh * 0.95;
+    tx(m, 12, 'Enel conta de luz', luz, 'energia', 'casa', 'm2');
+    const agua = Math.round((11 + rnd()*3)*10)/10; tx(m, 15, 'Sabesp', agua * 9.4, 'agua', 'casa', 'm2');
+    s.consumos.push({id:uid(), mes:m, tipo:'energia', qtd:kwh, custo:Math.round(luz*100)/100}, {id:uid(), mes:m, tipo:'agua', qtd:agua, custo:Math.round(agua*9.4*100)/100});
+    tx(m, 8, 'Vivo Fibra 600MB', 139.9, 'internet', 'casa', 'm1');
+    tx(m, 9, 'Claro celular Ana', 89.9, 'internet', 'm1', 'm1'); tx(m, 9, 'Claro celular Bruno', 89.9, 'internet', 'm2', 'm2');
+    tx(m, 3, 'Netflix', 55.9, 'assinaturas', 'casa', 'm1'); tx(m, 3, 'Spotify Família', 34.9, 'assinaturas', 'casa', 'm2');
+    tx(m, 4, 'Disney+', 43.9, 'assinaturas', 'casa', 'm1'); tx(m, 6, 'Smart Fit', 119.9, 'assinaturas', 'm2', 'm2');
+    tx(m, 7, 'Escola de natação Lia', 260, 'educacao', 'm3', 'm1');
+    tx(m, 20, 'Seguro auto', 210, 'impostos', 'casa', 'm2');
+    [2, 9, 16, 23].forEach((d, i) => tx(m, d, ['Assaí Atacadista', 'Carrefour', 'Hortifruti', 'Pão de Açúcar'][i], 280 + rnd()*220, 'mercado', 'casa', i % 2 ? 'm2' : 'm1'));
+    for (let i = 0; i < 5; i++) tx(m, 4 + i*5, 'iFood', 45 + rnd()*70, 'restaurantes', 'casa', i % 2 ? 'm1' : 'm2');
+    for (let i = 0; i < 6; i++) tx(m, 2 + i*4, 'Uber', 18 + rnd()*25, 'transporte', i % 2 ? 'm1' : 'm2', i % 2 ? 'm1' : 'm2');
+    tx(m, 11, 'Posto Shell gasolina', 240 + rnd()*40, 'transporte', 'casa', 'm2'); tx(m, 25, 'Posto Ipiranga', 230 + rnd()*40, 'transporte', 'casa', 'm2');
+    tx(m, 14, 'Drogaria Raia', 60 + rnd()*90, 'saude', 'casa', 'm1');
+    tx(m, 18, ['Cinema', 'Parque', 'Teatro', 'Show', 'Boliche', 'Cinema'][k], 90 + rnd()*120, 'lazer', 'casa', 'm1');
+    tx(m, 21, 'Renner', 80 + rnd()*150, 'vestuario', k % 2 ? 'm1' : 'm3', 'm1');
+    tx(m, 1, 'Tarifa pacote bancário', 34.9, 'tarifas', 'casa', 'm1');
+    tx(m, 13, 'Petz ração', 160, 'pets', 'casa', 'm2');
+    if (k === 2) tx(m, 17, 'Juros cheque especial', 87.4, 'tarifas', 'casa', 'm2');
+    if (k === 3) tx(m, 19, 'Eletricista', 350, 'manutencao', 'casa', 'm1');
+    if (atual){ tx(m, 1, 'Carrefour compra do mês', 1380, 'mercado', 'casa', 'm1'); tx(m, 2, 'iFood', 89.9, 'restaurantes', 'casa', 'm2'); tx(m, 2, 'iFood', 89.9, 'restaurantes', 'casa', 'm2'); tx(m, 3, 'Loja de eletro – air fryer', 649, 'vestuario', 'casa', 'm1'); tx(m, 4, 'PGTO 05/11 MERCPAGO*XYZ', 74.5, 'outros', 'casa', 'm2'); }
+  }
+  s.transacoes.filter(t => t.desc.includes('air fryer')).forEach(t => t.aprovada = false);
+  s.orcamentos = {moradia:2950, energia:300, agua:140, internet:330, mercado:1700, restaurantes:350, transporte:750, saude:150, assinaturas:250, lazer:200, vestuario:200, tarifas:0, educacao:260, impostos:210, pets:160};
+  delete s.orcamentos.tarifas;
+  s.assinaturas = [
+    {id:uid(), nome:'Netflix', valor:55.9, ciclo:'mensal', uso:'alto', dono:'casa', renov:''},
+    {id:uid(), nome:'Spotify Família', valor:34.9, ciclo:'mensal', uso:'alto', dono:'casa', renov:''},
+    {id:uid(), nome:'Disney+', valor:43.9, ciclo:'mensal', uso:'baixo', dono:'casa', renov:''},
+    {id:uid(), nome:'Smart Fit', valor:119.9, ciclo:'mensal', uso:'nenhum', dono:'m2', renov:''},
+    {id:uid(), nome:'Amazon Prime', valor:166.8, ciclo:'anual', uso:'medio', dono:'m1', renov:`${addM(HOJE_YM, 3)}-10`},
+    {id:uid(), nome:'iCloud 200GB', valor:14.9, ciclo:'mensal', uso:'alto', dono:'m1', renov:''},
+  ];
+  s.contratos = [
+    {id:uid(), nome:'Internet fibra', fornecedor:'Vivo 600MB', valor:139.9, alternativa:'Outra operadora 500MB', valorAlt:99.9, venc:`${addM(HOJE_YM, -2)}-15`},
+    {id:uid(), nome:'Celulares (2 linhas)', fornecedor:'Claro', valor:179.8, alternativa:'Plano família 2 linhas', valorAlt:129.9, venc:''},
+    {id:uid(), nome:'Seguro auto', fornecedor:'Seguradora A', valor:210, alternativa:'', valorAlt:0, venc:`${addM(HOJE_YM, 4)}-20`},
+    {id:uid(), nome:'Pacote bancário', fornecedor:'Banco tradicional', valor:34.9, alternativa:'Conta digital', valorAlt:0.01, venc:''},
+  ];
+  s.metas = [{id:uid(), nome:'Viagem de férias', alvo:9000, atual:2600, prazo:addM(HOJE_YM, 8)}, {id:uid(), nome:'Trocar o sofá', alvo:3500, atual:900, prazo:addM(HOJE_YM, 5)}];
+  s.economias = [{id:uid(), data:`${addM(HOJE_YM, -2)}-10`, desc:'Cancelada assinatura HBO Max', valor:39.9}];
+  s.planejados = [{id:uid(), nome:'Curso de inglês da Lia', valor:380, cat:'educacao', inicio:addM(HOJE_YM, 1), fim:''}];
+  const ant = addM(HOJE_YM, -1); s.ritual[ant] = Object.fromEntries(RITUAL.map(r => [r[0], true]));
+  return s;
+}
+
+try { const t = localStorage.getItem(KEY + '.tema'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
+render();
+</script>
+</body>
+</html>
