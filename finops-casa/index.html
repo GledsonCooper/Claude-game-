@@ -181,6 +181,7 @@ const CATS = [
   ['restaurantes','🍽️','Restaurantes & delivery','variavel','estilo'],
   ['bebidas','🍺','Bebidas & adega','variavel','estilo'],
   ['assinaturas','📺','Assinaturas & apps','fixo','estilo'],
+  ['eletronicos','📱','Eletrônicos & tecnologia','variavel','estilo'],
   ['lazer','🎉','Lazer & viagens','variavel','estilo'],
   ['vestuario','👕','Vestuário & compras','variavel','estilo'],
   ['tarifas','🏦','Juros, tarifas & multas','variavel','estilo'],
@@ -190,6 +191,7 @@ const CATS = [
 const AUTO = [
   ['baby|bebe|bebê|fralda|maternidade|pediatr|infantil','bebe'],
   ['bebida|adega|cervej|empório de bebidas','bebidas'],
+  ['samsung|computador|celulares|eletron|kabum|fast shop|apple store','eletronicos'],
   ['aluguel|condom|imobili','moradia'],
   ['enel|light|cemig|copel|celesc|coelba|energisa|cpfl|equatorial|neoenergia|eletropaulo|energia','energia'],
   ['sabesp|cedae|copasa|sanepar|embasa|compesa|caesb|água|agua','agua'],
@@ -256,7 +258,7 @@ let MES = HOJE_YM;
 (() => { // carrega os dados embutidos uma única vez, se o navegador ainda não tiver dados próprios
   if (!PRESET) return;
   let visto = null; try { visto = localStorage.getItem(KEY + '.preset'); } catch(e) {}
-  if (visto !== PRESET.presetId && (!S.transacoes.length || S.transacoes.every(t => t.fonte === 'exemplo'))){
+  if (visto !== PRESET.presetId && (!S.transacoes.length || S.transacoes.every(t => t.fonte === 'exemplo' || t.fonte === 'fatura'))){
     S = migrar(PRESET); save(); try { localStorage.setItem(KEY + '.preset', PRESET.presetId); } catch(e) {}
   }
 })();
@@ -305,6 +307,7 @@ function previsao(m){
   return {total:sum(Object.values(det)), det};
 }
 
+const dataReal = t => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t.compra || ''); return m ? new Date(+m[3], m[2] - 1, +m[1]) : new Date(t.data); };
 function anomalias(m){
   const out = [], pct = S.regras.anomaliaPct;
   const real = porCat(m), hist = mediaCat(m, 3);
@@ -330,9 +333,9 @@ function anomalias(m){
     if (a.id >= b.id) continue;
     const k = [a.id, b.id].join();
     if (vistos.has(k)) continue;
-    if (Math.abs(a.valor - b.valor) < 0.01 && a.desc.trim().toLowerCase() === b.desc.trim().toLowerCase() && Math.abs(new Date(a.data) - new Date(b.data)) <= 3*864e5){
+    if (Math.abs(a.valor - b.valor) < 0.01 && a.desc.trim().toLowerCase() === b.desc.trim().toLowerCase() && Math.abs(dataReal(a) - dataReal(b)) <= 3*864e5){
       vistos.add(k);
-      out.push({sev:'b', tipo:'Possível cobrança duplicada', txt:`${a.desc}: ${R(a.valor)} em ${dataBR(a.data)} e ${dataBR(b.data)}`, impacto:a.valor, tx:b.id});
+      out.push({sev:'b', tipo:'Possível cobrança duplicada', txt:`${a.desc}: ${R(a.valor)} em ${a.compra || dataBR(a.data)} e ${b.compra || dataBR(b.data)}`, impacto:a.valor, tx:b.id});
     }
   }
   return out.sort((a, b) => b.impacto - a.impacto);
@@ -373,18 +376,22 @@ function recomendacoes(m){
   const peq = txMes(m).filter(t => !t.parc && t.valor < 60 && ['mercado','bebidas','restaurantes'].includes(t.cat));
   if (peq.length >= 10){ const v = sum(peq.map(t => t.valor));
     recs.push({k:'peq-'+m, area:'Otimização de uso', titulo:`Agrupar compras pequenas (${peq.length} no mês)`, det:`${peq.length} compras abaixo de R$ 60 em padaria, bebidas e lanches somam ${R(v)}. Uma compra semanal planejada no atacado costuma cortar ~25% (menos impulso, preço de volume).`, eco:v*0.25, esf:'Médio'}); }
+  const gas = txMes(m).filter(t => t.cat === 'gas');
+  if (gas.length >= 3){ const v = sum(gas.map(t => t.valor));
+    recs.push({k:'gas-'+m, area:'Otimização de uso', titulo:`Investigar consumo de gás (${gas.length} recargas no mês)`, det:`${R(v)} em ${gas.length} compras de gás. Um botijão de 13 kg costuma durar 1–2 meses numa família: verifique vazamento (espuma de sabão na mangueira e no registro), mangueira vencida e uso de aquecedor; compare com gás encanado.`, eco:v - v/gas.length, esf:'Médio'}); }
   const beb = (porCat(m).bebidas || 0);
   if (beb > 150 && !S.orcamentos.bebidas) recs.push({k:'beb-'+m, area:'Orçamento', titulo:'Teto mensal para bebidas', det:`${R(beb)} em bebidas/adega no mês. Comprar em fardo no atacado e definir teto de ${R(Math.round(beb*0.6/10)*10)}.`, eco:beb*0.4, esf:'Baixo'});
   const taxas = txMes(m).filter(t => t.cat === 'tarifas');
   if (taxas.length){
     const v = sum(taxas.map(t => t.valor));
-    recs.push({k:'taxas-'+m, area:'Eliminar desperdício', titulo:'Zerar juros, tarifas e multas', det:`${taxas.length} cobrança(s) em ${nomeMes(m)} somando ${R(v)}. Pague o cartão sempre pelo valor total até o vencimento (débito automático do total), evite cheque especial e peça isenção de tarifas/anuidade.`, eco:v, esf:'Baixo'});
+    recs.push({k:'taxas-'+m, area:'Eliminar desperdício', titulo:'Zerar juros, tarifas e multas', det:`${taxas.length} cobrança(s) em ${nomeMes(m)} somando ${R(v)}. Pague o cartão sempre pelo valor total até o vencimento (débito automático do total), evite cheque especial, peça isenção de tarifas/anuidade e prefira assinaturas cobradas em reais (compras em dólar pagam IOF).`, eco:v, esf:'Baixo'});
   }
   const pv = previsao(m);
   for (const c of S.categorias){
     const o = S.orcamentos[c.id] || 0, p = pv.det[c.id] || 0;
-    if (o > 0 && p > o * 1.1 && c.grupo === 'estilo')
-      recs.push({k:'orc-'+c.id+'-'+m, area:'Orçamento', titulo:`Segurar ${c.nome.toLowerCase()}`, det:`Previsão de ${R(p)} para orçamento de ${R(o)}. Defina um teto semanal de ${R(o/4.3)}.`, eco:p - o, esf:'Médio'});
+    const livre = sum(txMes(m).filter(t => t.cat === c.id && !t.parc).map(t => t.valor)) || (p - sum(txMes(m).filter(t => t.cat === c.id && t.parc).map(t => t.valor))); // parcelas já assumidas não são cortáveis
+    if (o > 0 && p > o * 1.1 && c.grupo === 'estilo' && c.id !== 'outros' && livre > 0)
+      recs.push({k:'orc-'+c.id+'-'+m, area:'Orçamento', titulo:`Segurar ${c.nome.toLowerCase()}`, det:`Previsão de ${R(p)} para orçamento de ${R(o)} (${R(livre)} são compras novas, sem parcela). Defina um teto semanal de ${R(o/4.3)} para compras novas.`, eco:Math.min(p - o, livre), esf:'Médio'});
   }
   const st = S.recStatus;
   return recs.filter(r => r.eco > 0.5).map(r => ({...r, status:st[r.k] || ''})).sort((a, b) => (a.status ? 1 : 0) - (b.status ? 1 : 0) || b.eco - a.eco);
@@ -635,7 +642,7 @@ V.lancamentos = () => {
       <input style="width:160px" placeholder="Buscar…" value="${esc(FILTRO.q)}" onchange="FILTRO.q=this.value;render()">
     </div>
     ${tx.length ? `<div class="tw"><table><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Consumo</th><th class="n">Valor</th><th></th></tr>
-    ${tx.map(t => `<tr><td>${dataBR(t.data).slice(0, 5)}</td><td>${esc(t.desc)} ${t.parc ? `<span class="tag i">parc. ${esc(t.parc)}</span>` : ''} ${t.aprovada ? '<span class="tag o">aprovada</span>' : ''}${t.compra ? `<div class="muted" style="font-size:12px">compra em ${esc(t.compra)}</div>` : ''}</td>
+    ${tx.map(t => `<tr><td>${dataBR(t.data).slice(0, 5)}</td><td>${esc(t.desc)} ${t.parc ? `<span class="tag i">parc. ${esc(t.parc)}</span>` : ''} ${t.aprovada ? '<span class="tag o">aprovada</span>' : ''}${t.compra || t.cartao ? `<div class="muted" style="font-size:12px">${t.compra ? 'compra em ' + esc(t.compra) : ''}${t.compra && t.cartao ? ' · ' : ''}${t.cartao ? '💳 ' + esc(t.cartao) : ''}</div>` : ''}</td>
       <td><select class="s" style="width:auto;padding:3px 6px;font-size:13px" onchange="A.setCat('${t.id}',this.value)">${catOpts(t.cat)}</select></td>
       <td class="muted">${esc(nomeQuem(t.quem))}</td><td class="n">${R(t.valor)}</td>
       <td class="n"><button class="x" title="Editar" onclick="A.editar('${t.id}')">✏️</button><button class="x" title="Excluir" onclick="A.del('${t.id}')">✕</button></td></tr>`).join('')}</table></div>`
@@ -781,6 +788,7 @@ V.cartao = () => {
     ${kpi('Juros e encargos pagos', R(enc), enc ? 'dinheiro 100% desperdiçado' : 'nenhum 👏', enc ? 'bad' : 'ok')}
   </div>
   <div class="card"><h2>📉 Curva de parcelas já comprometidas</h2>${fut ? barChart(prox.map(x => nomeMes(x, true)), curva, {label:'Parcelas futuras por mês', colors:curva.map(() => 'var(--warn)')}) + `<p class="muted" style="font-size:13px;margin:6px 0 0">Cada mês que passa libera orçamento. Evitar novas parcelas até a curva cair é a forma mais rápida de "ganhar" folga sem cortar nada.</p>` : '<div class="empty">Nenhuma parcela futura cadastrada.</div>'}</div>
+  ${(() => { const pc = {}; for (const t of tx) if (t.cartao) pc[t.cartao] = (pc[t.cartao] || 0) + t.valor; const ks = Object.keys(pc); return ks.length > 1 ? `<div class="card"><h2>Por cartão</h2>${hbars(ks.sort((a, b) => pc[b] - pc[a]).map(k => ({l:'💳 ' + esc(k), v:pc[k], t:`${R(pc[k])} · ${P(pc[k]/tot*100)}`})))}</div>` : ''; })()}
   ${novas.length ? `<div class="alert w"><span>🆕</span><div class="t"><b>${novas.length} parcelamento(s) novo(s) neste mês</b> — ${novas.map(t => `${esc(t.desc)} (${esc(t.parc)} × ${R(t.valor)})`).join(' · ')}</div></div>` : ''}
   <div class="card"><h2>Compromissos ativos (${lista.length})</h2>${lista.length ? `<div class="tw"><table><tr><th>Compra</th><th>Categoria</th><th class="n">Parcela</th><th class="n">Restam</th><th class="n">Saldo</th><th>Termina</th><th></th></tr>${lista.map(({p, n}) => `<tr><td>${esc(p.nome)}</td><td>${cat(p.cat).icone} ${esc(cat(p.cat).nome)}</td><td class="n">${R(p.valor)}</td><td class="n">${n}×</td><td class="n"><b>${R(p.valor*n)}</b></td><td>${nomeMes(p.fim, true)}/${p.fim.slice(2, 4)}</td><td class="n"><button class="x" onclick="A.delItem('planejados','${p.id}')">✕</button></td></tr>`).join('')}</table></div>` : '<div class="empty">Sem parcelas futuras.</div>'}
   <details style="margin-top:10px"><summary>+ Cadastrar compra parcelada</summary><div class="form" style="margin-top:8px"><label style="grid-column:span 2">Descrição<input id="pc_nome"></label><label>Valor da parcela<input id="pc_val" inputmode="decimal"></label><label>Parcelas restantes<input id="pc_n" inputmode="numeric"></label><label>Categoria<select id="pc_cat">${catOpts('vestuario')}</select></label><label>Primeira a pagar<input type="month" id="pc_ini" value="${addM(m, 1)}"></label><button class="p" onclick="A.addParcela()">Adicionar</button></div></details></div>
@@ -1160,7 +1168,7 @@ const A = {
     S.onboarded = true; save(); $('#dlg').close(); go('lancamentos'); render(); toast('Pronto! Lance ou importe seus primeiros gastos.');
   },
   async carregarPreset(){
-    if (S.transacoes.length && !S.transacoes.every(t => t.fonte === 'exemplo') && !await ask('Dados reais', 'Substituir os dados atuais pelos dados embutidos nesta página?', {ok:'Substituir', perigo:true})) return;
+    if (S.transacoes.length && !S.transacoes.every(t => t.fonte === 'exemplo' || t.fonte === 'fatura') && !await ask('Dados reais', 'Substituir os dados atuais pelos dados embutidos nesta página?', {ok:'Substituir', perigo:true})) return;
     S = migrar(PRESET); save(); MES = [...new Set(S.transacoes.map(t => ymOf(t.data)))].sort().pop() || HOJE_YM; go('painel'); render(); toast('Dados carregados'); },
   addParcela(){ const v = num('pc_val'), n = Math.round(num('pc_n')); if (!val('pc_nome') || !(v > 0) || !(n >= 1)) return toast('Informe descrição, valor da parcela e nº de parcelas restantes');
     const ini = val('pc_ini') || addM(MES, 1);
