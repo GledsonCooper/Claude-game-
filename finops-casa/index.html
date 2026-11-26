@@ -135,6 +135,7 @@ details summary{cursor:pointer;font-weight:600}
 <dialog id="dlg"></dialog>
 <div class="toast" id="toast"></div>
 
+<script type="application/json" id="preset"></script>
 <script>
 'use strict';
 /* ====================== Utilidades ====================== */
@@ -176,7 +177,9 @@ const CATS = [
   ['impostos','🧾','Impostos & seguros','fixo','essencial'],
   ['manutencao','🔧','Manutenção da casa','variavel','essencial'],
   ['pets','🐾','Pets','variavel','essencial'],
+  ['bebe','👶','Bebê & filhos','variavel','essencial'],
   ['restaurantes','🍽️','Restaurantes & delivery','variavel','estilo'],
+  ['bebidas','🍺','Bebidas & adega','variavel','estilo'],
   ['assinaturas','📺','Assinaturas & apps','fixo','estilo'],
   ['lazer','🎉','Lazer & viagens','variavel','estilo'],
   ['vestuario','👕','Vestuário & compras','variavel','estilo'],
@@ -185,6 +188,8 @@ const CATS = [
 ].map(([id, icone, nome, tipo, grupo]) => ({id, icone, nome, tipo, grupo}));
 
 const AUTO = [
+  ['baby|bebe|bebê|fralda|maternidade|pediatr|infantil','bebe'],
+  ['bebida|adega|cervej|empório de bebidas','bebidas'],
   ['aluguel|condom|imobili','moradia'],
   ['enel|light|cemig|copel|celesc|coelba|energisa|cpfl|equatorial|neoenergia|eletropaulo|energia','energia'],
   ['sabesp|cedae|copasa|sanepar|embasa|compesa|caesb|água|agua','agua'],
@@ -210,6 +215,7 @@ const RITUAL = [
   ['anom','Revisar anomalias e cobranças duplicadas','anomalias','Gestão de anomalias'],
   ['orc','Comparar real × orçamento e ajustar a previsão','orcamento','Orçamento & Previsão'],
   ['subs','Revisar assinaturas e cancelar as ociosas','assinaturas','Licenças & SaaS'],
+  ['cartao','Conferir a fatura, parcelas novas e pagar o valor TOTAL em dia','cartao','Compromissos & tarifas'],
   ['uso','Registrar leituras de luz, água e gás','consumo','Otimização de uso'],
   ['rateio','Fazer o acerto entre os moradores','alocacao','Faturamento & Chargeback'],
   ['rec','Aplicar pelo menos 1 recomendação de economia','recomendacoes','Otimização'],
@@ -224,19 +230,37 @@ function defaults(){
     moradores:[{id:'m1', nome:'Eu', peso:1, renda:0}],
     categorias:JSON.parse(JSON.stringify(CATS)),
     transacoes:[], orcamentos:{}, consumos:[], assinaturas:[], contratos:[], metas:[], economias:[], planejados:[],
-    regras:{alertaOrc:80, anomaliaPct:30, limiteCompra:500, essencialMax:50, estiloMax:30, poupancaMin:20, moradiaMax:30},
+    regras:{alertaOrc:80, anomaliaPct:30, limiteCompra:500, essencialMax:50, estiloMax:30, poupancaMin:20, moradiaMax:30, parcelaMin:200, parcelasMax:20},
+    cartao:{nome:'Cartão de crédito', vencimento:10, jurosRot:12, jurosParc:8},
     autoCat:JSON.parse(JSON.stringify(AUTO)),
     ritual:{}, recStatus:{}
   };
 }
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v) return Object.assign(defaults(), s); } catch(e) {}
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v) return migrar(s); } catch(e) {}
   return defaults();
 }
+function migrar(s){
+  const d = defaults(), o = Object.assign(d, s);
+  o.regras = Object.assign(defaults().regras, s.regras || {});
+  o.cartao = Object.assign(defaults().cartao, s.cartao || {});
+  for (const c of CATS) if (!o.categorias.some(x => x.id === c.id)) o.categorias.splice(Math.max(0, o.categorias.length - 1), 0, {...c});
+  return o;
+}
+// Dados embutidos na página publicada (ex.: fatura real). No repositório fica vazio.
+const PRESET = (() => { try { const t = document.getElementById('preset')?.textContent.trim(); return t ? JSON.parse(t) : null; } catch(e) { return null; } })();
 let S = load();
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast('Não foi possível salvar no navegador'); } }
 
 let MES = HOJE_YM;
+(() => { // carrega os dados embutidos uma única vez, se o navegador ainda não tiver dados próprios
+  if (!PRESET) return;
+  let visto = null; try { visto = localStorage.getItem(KEY + '.preset'); } catch(e) {}
+  if (visto !== PRESET.presetId && (!S.transacoes.length || S.transacoes.every(t => t.fonte === 'exemplo'))){
+    S = migrar(PRESET); save(); try { localStorage.setItem(KEY + '.preset', PRESET.presetId); } catch(e) {}
+  }
+})();
+if (!S.transacoes.some(t => ymOf(t.data) === HOJE_YM) && S.transacoes.length) MES = [...new Set(S.transacoes.map(t => ymOf(t.data)))].sort().pop();
 let ROTA = 'painel';
 let FILTRO = {cat:'', q:''};
 
@@ -252,12 +276,16 @@ const renda = () => sum(S.moradores.map(m => m.renda));
 function mediaCat(m, n = 3){
   const ms = meses(addM(m, -1), n).filter(x => txMes(x).length);
   const o = {}; if (!ms.length) return o;
-  for (const x of ms){ const pc = porCat(x); for (const k in pc) o[k] = (o[k] || 0) + pc[k]; }
+  for (const x of ms) for (const t of txMes(x)) if (!t.parc) o[t.cat] = (o[t.cat] || 0) + t.valor; // parcelas entram via compromissos
   for (const k in o) o[k] /= ms.length;
   return o;
 }
 function mediaTotal(m, n = 3){ const ms = meses(addM(m, -1), n).filter(x => txMes(x).length); return ms.length ? sum(ms.map(totalMes)) / ms.length : 0; }
 const planejadosAtivos = m => S.planejados.filter(p => p.inicio <= m && (!p.fim || p.fim >= m));
+const parcelasMes = m => sum(planejadosAtivos(m).filter(p => p.tipo === 'parcela').map(p => p.valor));
+const mesesEntre = (a, b) => { const [y1, m1] = a.split('-').map(Number), [y2, m2] = b.split('-').map(Number); return (y2 - y1)*12 + m2 - m1 + 1; };
+function comprometido(m){ // total de parcelas a pagar depois do mês m
+  let t = 0; for (const p of S.planejados.filter(p => p.tipo === 'parcela' && p.fim)){ const ini = p.inicio > m ? p.inicio : addM(m, 1); if (p.fim >= ini) t += p.valor * mesesEntre(ini, p.fim); } return t; }
 
 function previsao(m){
   const real = porCat(m), hist = mediaCat(m, 3);
@@ -291,7 +319,7 @@ function anomalias(m){
   const tx = txMes(m);
   for (const t of tx){
     if (cat(t.cat).tipo === 'fixo') continue;
-    const hist6 = S.transacoes.filter(x => x.cat === t.cat && x.id !== t.id && seis.includes(ymOf(x.data))).map(x => x.valor).sort((a, b) => a - b);
+    const hist6 = S.transacoes.filter(x => x.cat === t.cat && x.id !== t.id && seis.includes(ymOf(x.data)) && ymOf(x.data) < m).map(x => x.valor).sort((a, b) => a - b);
     if (hist6.length >= 3){
       const med = hist6[Math.floor(hist6.length/2)];
       if (t.valor > med * 3 && t.valor > 100) out.push({sev:'w', tipo:'Valor fora do padrão', txt:`${t.desc} (${dataBR(t.data)}): ${R(t.valor)} — normalmente ${R(med)} em ${cat(t.cat).nome}`, impacto:t.valor-med, tx:t.id});
@@ -342,10 +370,15 @@ function recomendacoes(m){
       recs.push({k:'uso-'+tipo+'-'+r.mes, area:'Otimização de uso', titulo:`Reduzir consumo de ${ref.nome.toLowerCase()}`, det:`${N(pp)} ${ref.un}/pessoa em ${nomeMes(r.mes, true)}, acima da referência de ~${ref.ref} ${ref.un}/pessoa. Veja dicas em Consumo.`, eco:ecoU, esf:'Médio'});
     }
   }
+  const peq = txMes(m).filter(t => !t.parc && t.valor < 60 && ['mercado','bebidas','restaurantes'].includes(t.cat));
+  if (peq.length >= 10){ const v = sum(peq.map(t => t.valor));
+    recs.push({k:'peq-'+m, area:'Otimização de uso', titulo:`Agrupar compras pequenas (${peq.length} no mês)`, det:`${peq.length} compras abaixo de R$ 60 em padaria, bebidas e lanches somam ${R(v)}. Uma compra semanal planejada no atacado costuma cortar ~25% (menos impulso, preço de volume).`, eco:v*0.25, esf:'Médio'}); }
+  const beb = (porCat(m).bebidas || 0);
+  if (beb > 150 && !S.orcamentos.bebidas) recs.push({k:'beb-'+m, area:'Orçamento', titulo:'Teto mensal para bebidas', det:`${R(beb)} em bebidas/adega no mês. Comprar em fardo no atacado e definir teto de ${R(Math.round(beb*0.6/10)*10)}.`, eco:beb*0.4, esf:'Baixo'});
   const taxas = txMes(m).filter(t => t.cat === 'tarifas');
   if (taxas.length){
     const v = sum(taxas.map(t => t.valor));
-    recs.push({k:'taxas-'+m, area:'Eliminar desperdício', titulo:'Zerar juros, tarifas e multas', det:`${taxas.length} cobrança(s) em ${nomeMes(m)} somando ${R(v)}. Peça isenção do pacote bancário, use conta digital e pague em dia (débito automático).`, eco:v, esf:'Baixo'});
+    recs.push({k:'taxas-'+m, area:'Eliminar desperdício', titulo:'Zerar juros, tarifas e multas', det:`${taxas.length} cobrança(s) em ${nomeMes(m)} somando ${R(v)}. Pague o cartão sempre pelo valor total até o vencimento (débito automático do total), evite cheque especial e peça isenção de tarifas/anuidade.`, eco:v, esf:'Baixo'});
   }
   const pv = previsao(m);
   for (const c of S.categorias){
@@ -361,6 +394,10 @@ function violacoes(m){
   const v = [], rg = S.regras, tx = txMes(m);
   const grandes = tx.filter(t => t.valor > rg.limiteCompra && !t.aprovada && cat(t.cat).tipo !== 'fixo');
   for (const t of grandes) v.push({sev:'w', pol:'Aprovação de compras grandes', txt:`${t.desc} — ${R(t.valor)} em ${dataBR(t.data)} acima de ${R(rg.limiteCompra)} sem aprovação`, acao:`<button class="s" onclick="A.aprovar('${t.id}')">Aprovar</button>`});
+  const parcPeq = tx.filter(t => t.parc && /^0?1\//.test(t.parc) && t.valor * Number(t.parc.split('/')[1]) < rg.parcelaMin);
+  if (parcPeq.length) v.push({sev:'w', pol:`Não parcelar compras abaixo de ${R(rg.parcelaMin)}`, txt:`${parcPeq.length} compra(s) pequena(s) parcelada(s) neste mês: ${parcPeq.map(t => t.desc).slice(0, 4).join(', ')}${parcPeq.length > 4 ? '…' : ''}`});
+  const rdP = renda(), prox = parcelasMes(addM(m, 1));
+  if (rdP > 0 && prox / rdP * 100 > rg.parcelasMax) v.push({sev:'b', pol:`Parcelas ≤ ${rg.parcelasMax}% da renda`, txt:`${R(prox)} já comprometidos em parcelas no próximo mês (${P(prox/rdP*100)} da renda)`, acao:`<button class="s" onclick="go('cartao')">Ver</button>`});
   const sem = tx.filter(t => t.cat === 'outros');
   if (sem.length) v.push({sev:'w', pol:'Todo gasto deve ter categoria', txt:`${sem.length} lançamento(s) sem categoria (${R(sum(sem.map(t => t.valor)))})`, acao:`<button class="s" onclick="A.filtrar('outros')">Categorizar</button>`});
   const pv = previsao(m);
@@ -475,7 +512,7 @@ const head = (t, s, fase) => `<h1>${t} ${fase ? `<span class="tag i">${fase}</sp
 const NAV = [
   ['Visão geral', [['painel','📊','Painel'], ['mapa','🧭','Mapa FinOps']]],
   ['1 · Informar', [['lancamentos','📥','Lançamentos'], ['alocacao','🏷️','Alocação & Rateio'], ['relatorios','📈','Relatórios'], ['anomalias','🚨','Anomalias'], ['unitarios','🧮','Custos unitários']]],
-  ['2 · Otimizar', [['orcamento','🎯','Orçamento & Previsão'], ['planejamento','🗓️','Planejamento'], ['tarifas','💱','Tarifas & Contratos'], ['consumo','💡','Consumo & Sustentab.'], ['assinaturas','📺','Assinaturas'], ['recomendacoes','✨','Recomendações']]],
+  ['2 · Otimizar', [['orcamento','🎯','Orçamento & Previsão'], ['planejamento','🗓️','Planejamento'], ['cartao','💳','Cartão & Parcelas'], ['tarifas','💱','Tarifas & Contratos'], ['consumo','💡','Consumo & Sustentab.'], ['assinaturas','📺','Assinaturas'], ['recomendacoes','✨','Recomendações']]],
   ['3 · Operar', [['governanca','🛡️','Políticas'], ['valor','🏆','Valor & Metas'], ['benchmark','⚖️','Benchmarking'], ['ritual','🔁','Ritual mensal'], ['maturidade','🌱','Maturidade'], ['aprender','🎓','Aprender'], ['config','⚙️','Casa & Dados']]],
 ];
 function go(r){ location.hash = r; }
@@ -486,7 +523,7 @@ function render(){
   { const t = nomeMes(MES); $('#mesLbl').textContent = t[0].toUpperCase() + t.slice(1); }
   $('#casaNome').textContent = S.casa.nome;
   $('#main').innerHTML = V[ROTA]();
-  ({planejamento:() => { A.simular(); A.simMeta(); }, tarifas:() => A.simAnual(), consumo:() => A.payback()})[ROTA]?.();
+  ({planejamento:() => { A.simular(); A.simMeta(); }, tarifas:() => A.simAnual(), cartao:() => A.simRot(), consumo:() => A.payback()})[ROTA]?.();
   const on = $('#nav a.on'); if (on && window.innerWidth <= 860) on.scrollIntoView({inline:'center', block:'nearest'});
 }
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
@@ -498,7 +535,7 @@ V.painel = () => {
   if (!S.transacoes.length && !S.onboarded) return `
   <div class="card hero"><h1>Bem-vindo ao FinOps Casa 🏠</h1>
   <p>FinOps é a disciplina que empresas usam para controlar o custo da nuvem: <b>Informar</b> (ver para onde vai o dinheiro), <b>Otimizar</b> (gastar melhor) e <b>Operar</b> (criar hábito e regras). Aqui aplicamos exatamente o mesmo método às contas da sua casa.</p>
-  <div class="row"><button onclick="A.wizard()">Começar do zero (2 minutos)</button><button onclick="A.exemplo()">Ver com dados de exemplo</button></div></div>
+  <div class="row">${PRESET ? `<button onclick="A.carregarPreset()">📄 ${esc(PRESET.presetNome || 'Dados reais')}</button>` : ''}<button onclick="A.wizard()">Começar do zero (2 minutos)</button><button onclick="A.exemplo()">Ver com dados de exemplo</button></div></div>
   <div class="grid g3">
     <div class="card phase"><h2>1 · Informar</h2><p class="muted">Lance ou importe o extrato, categorize, divida entre moradores e veja relatórios, anomalias e custo por pessoa/m².</p></div>
     <div class="card phase"><h2>2 · Otimizar</h2><p class="muted">Orçamento, previsão, renegociação de contratos, consumo de luz/água, assinaturas ociosas e recomendações com economia estimada.</p></div>
@@ -548,6 +585,7 @@ V.mapa = () => {
       ['Arquitetura (decisões estruturais)','Calculadora de payback de melhorias (LED, solar, eletrodomésticos)','consumo'],
       ['Otimização de uso (rightsizing)','Leituras de luz/água/gás, consumo por pessoa e dicas','consumo'],
       ['Otimização de tarifas','Contratos × alternativas, plano anual × mensal','tarifas'],
+      ['Compromissos (commitments)','Parcelas futuras do cartão, curva de queda e custo do rotativo','cartao'],
       ['Licenças & SaaS','Inventário de assinaturas, uso e ociosidade','assinaturas'],
       ['Sustentabilidade','Pegada de CO₂ da energia elétrica','consumo']]],
     ['Gerenciar a prática FinOps','Operar',[
@@ -597,7 +635,7 @@ V.lancamentos = () => {
       <input style="width:160px" placeholder="Buscar…" value="${esc(FILTRO.q)}" onchange="FILTRO.q=this.value;render()">
     </div>
     ${tx.length ? `<div class="tw"><table><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Consumo</th><th class="n">Valor</th><th></th></tr>
-    ${tx.map(t => `<tr><td>${dataBR(t.data).slice(0, 5)}</td><td>${esc(t.desc)} ${t.aprovada ? '<span class="tag o">aprovada</span>' : ''}</td>
+    ${tx.map(t => `<tr><td>${dataBR(t.data).slice(0, 5)}</td><td>${esc(t.desc)} ${t.parc ? `<span class="tag i">parc. ${esc(t.parc)}</span>` : ''} ${t.aprovada ? '<span class="tag o">aprovada</span>' : ''}${t.compra ? `<div class="muted" style="font-size:12px">compra em ${esc(t.compra)}</div>` : ''}</td>
       <td><select class="s" style="width:auto;padding:3px 6px;font-size:13px" onchange="A.setCat('${t.id}',this.value)">${catOpts(t.cat)}</select></td>
       <td class="muted">${esc(nomeQuem(t.quem))}</td><td class="n">${R(t.valor)}</td>
       <td class="n"><button class="x" title="Editar" onclick="A.editar('${t.id}')">✏️</button><button class="x" title="Excluir" onclick="A.del('${t.id}')">✕</button></td></tr>`).join('')}</table></div>`
@@ -717,7 +755,7 @@ V.planejamento = () => {
   <div class="card"><h2>🧩 Onboarding de novo gasto recorrente</h2>
   <p class="muted" style="font-size:13.5px">Ex.: escola nova, plano de saúde, financiamento. Entra automaticamente na previsão a partir do mês de início.</p>
   <div class="form"><label style="grid-column:span 2">Nome<input id="pl_nome" placeholder="ex.: Curso de inglês"></label><label>Valor mensal<input id="pl_val" inputmode="decimal"></label><label>Categoria<select id="pl_cat">${catOpts('educacao')}</select></label><label>Início<input type="month" id="pl_ini" value="${addM(m, 1)}"></label><label>Fim (opcional)<input type="month" id="pl_fim"></label><button class="p" onclick="A.addPlan()">Planejar</button></div>
-  ${S.planejados.length ? `<div class="tw" style="margin-top:12px"><table><tr><th>Gasto</th><th>Categoria</th><th>Período</th><th class="n">Mensal</th><th class="n">Anual</th><th></th></tr>${S.planejados.map(p => `<tr><td>${esc(p.nome)}</td><td>${cat(p.cat).icone} ${esc(cat(p.cat).nome)}</td><td>${nomeMes(p.inicio, true)}/${p.inicio.slice(2, 4)} → ${p.fim ? nomeMes(p.fim, true) + '/' + p.fim.slice(2, 4) : 'sem fim'}</td><td class="n">${R(p.valor)}</td><td class="n">${R(p.valor*12)}</td><td class="n"><button class="x" onclick="A.delItem('planejados','${p.id}')">✕</button></td></tr>`).join('')}</table></div>` : ''}
+  ${S.planejados.some(p => p.tipo !== 'parcela') ? `<div class="tw" style="margin-top:12px"><table><tr><th>Gasto</th><th>Categoria</th><th>Período</th><th class="n">Mensal</th><th class="n">Anual</th><th></th></tr>${S.planejados.filter(p => p.tipo !== 'parcela').map(p => `<tr><td>${esc(p.nome)}</td><td>${cat(p.cat).icone} ${esc(cat(p.cat).nome)}</td><td>${nomeMes(p.inicio, true)}/${p.inicio.slice(2, 4)} → ${p.fim ? nomeMes(p.fim, true) + '/' + p.fim.slice(2, 4) : 'sem fim'}</td><td class="n">${R(p.valor)}</td><td class="n">${R(p.valor*12)}</td><td class="n"><button class="x" onclick="A.delItem('planejados','${p.id}')">✕</button></td></tr>`).join('')}</table></div>` : ''}
   </div>
   <div class="card"><h2>🧮 Simulador: à vista × parcelado</h2>
   <div class="form"><label>Preço (R$)<input id="sv_p" inputmode="decimal" value="3000" oninput="A.simular()"></label><label>Desconto à vista (%)<input id="sv_d" inputmode="decimal" value="10" oninput="A.simular()"></label><label>Nº de parcelas<input id="sv_n" inputmode="numeric" value="10" oninput="A.simular()"></label><label>Juros ao mês (%)<input id="sv_j" inputmode="decimal" value="0" oninput="A.simular()"></label><label>Rendimento da reserva (% a.m.)<input id="sv_r" inputmode="decimal" value="0,9" oninput="A.simular()"></label></div>
@@ -725,6 +763,38 @@ V.planejamento = () => {
   <div class="card"><h2>🎯 Quanto preciso guardar?</h2>
   <div class="form"><label>Objetivo (R$)<input id="sg_v" inputmode="decimal" value="10000" oninput="A.simMeta()"></label><label>Prazo (meses)<input id="sg_n" inputmode="numeric" value="12" oninput="A.simMeta()"></label><label>Rendimento (% a.m.)<input id="sg_r" inputmode="decimal" value="0,9" oninput="A.simMeta()"></label></div>
   <div id="metaOut" style="margin-top:12px"></div></div>`;
+};
+
+V.cartao = () => {
+  const m = MES, tot = totalMes(m), tx = txMes(m);
+  const parcM = sum(tx.filter(t => t.parc).map(t => t.valor)), enc = sum(tx.filter(t => t.cat === 'tarifas').map(t => t.valor));
+  const fut = comprometido(m), prox = meses(addM(m, 12), 12), curva = prox.map(parcelasMes);
+  const comp = S.planejados.filter(p => p.tipo === 'parcela' && p.fim && p.fim > m).sort((a, b) => b.valor * mesesEntre(a.inicio > m ? a.inicio : addM(m, 1), b.fim) - a.valor * mesesEntre(a.inicio > m ? a.inicio : addM(m, 1), a.fim));
+  const restantes = p => mesesEntre(p.inicio > m ? p.inicio : addM(m, 1), p.fim);
+  const novas = tx.filter(t => t.parc && /^0?1\//.test(t.parc)), cc = S.cartao, rd = renda();
+  const lista = comp.map(p => ({p, n:restantes(p)})).sort((a, b) => b.p.valor*b.n - a.p.valor*a.n);
+  return head('Cartão & Parcelas', 'Parcelas são compromissos — como Reserved Instances: você já gastou, mas paga nos próximos meses. Aqui fica a fatura, a curva de parcelas futuras e o custo dos juros.', 'Otimizar') + `
+  <div class="grid g4 mb">
+    ${kpi('Fatura / gastos do mês', R0(tot), nomeMes(m))}
+    ${kpi('Parcelas de compras antigas', R0(parcM), tot ? P(parcM/tot*100) + ' do mês já vinha comprometido' : '', tot && parcM/tot > .3 ? 'warn' : '')}
+    ${kpi('Comprometido nos próximos meses', R0(fut), `${R0(curva[0])} no próximo mês${rd ? ' · ' + P(curva[0]/rd*100) + ' da renda' : ''}`, fut ? 'warn' : 'ok')}
+    ${kpi('Juros e encargos pagos', R(enc), enc ? 'dinheiro 100% desperdiçado' : 'nenhum 👏', enc ? 'bad' : 'ok')}
+  </div>
+  <div class="card"><h2>📉 Curva de parcelas já comprometidas</h2>${fut ? barChart(prox.map(x => nomeMes(x, true)), curva, {label:'Parcelas futuras por mês', colors:curva.map(() => 'var(--warn)')}) + `<p class="muted" style="font-size:13px;margin:6px 0 0">Cada mês que passa libera orçamento. Evitar novas parcelas até a curva cair é a forma mais rápida de "ganhar" folga sem cortar nada.</p>` : '<div class="empty">Nenhuma parcela futura cadastrada.</div>'}</div>
+  ${novas.length ? `<div class="alert w"><span>🆕</span><div class="t"><b>${novas.length} parcelamento(s) novo(s) neste mês</b> — ${novas.map(t => `${esc(t.desc)} (${esc(t.parc)} × ${R(t.valor)})`).join(' · ')}</div></div>` : ''}
+  <div class="card"><h2>Compromissos ativos (${lista.length})</h2>${lista.length ? `<div class="tw"><table><tr><th>Compra</th><th>Categoria</th><th class="n">Parcela</th><th class="n">Restam</th><th class="n">Saldo</th><th>Termina</th><th></th></tr>${lista.map(({p, n}) => `<tr><td>${esc(p.nome)}</td><td>${cat(p.cat).icone} ${esc(cat(p.cat).nome)}</td><td class="n">${R(p.valor)}</td><td class="n">${n}×</td><td class="n"><b>${R(p.valor*n)}</b></td><td>${nomeMes(p.fim, true)}/${p.fim.slice(2, 4)}</td><td class="n"><button class="x" onclick="A.delItem('planejados','${p.id}')">✕</button></td></tr>`).join('')}</table></div>` : '<div class="empty">Sem parcelas futuras.</div>'}
+  <details style="margin-top:10px"><summary>+ Cadastrar compra parcelada</summary><div class="form" style="margin-top:8px"><label style="grid-column:span 2">Descrição<input id="pc_nome"></label><label>Valor da parcela<input id="pc_val" inputmode="decimal"></label><label>Parcelas restantes<input id="pc_n" inputmode="numeric"></label><label>Categoria<select id="pc_cat">${catOpts('vestuario')}</select></label><label>Primeira a pagar<input type="month" id="pc_ini" value="${addM(m, 1)}"></label><button class="p" onclick="A.addParcela()">Adicionar</button></div></details></div>
+  <div class="grid g2">
+    <div class="card"><h2>🔥 Quanto custa não pagar o total</h2><div class="form"><label>Valor que ficaria em aberto (R$)<input id="rt_v" inputmode="decimal" value="1000" oninput="A.simRot()"></label></div><div id="rtOut" style="margin-top:10px"></div>
+      <h2 style="margin-top:14px">Dados do cartão</h2><div class="form"><label>Cartão<input value="${esc(cc.nome)}" onchange="A.setCartao('nome',this.value)"></label><label>Dia do vencimento<input inputmode="numeric" value="${cc.vencimento}" onchange="A.setCartao('vencimento',this.value)"></label><label>Juros rotativo (% a.m.)<input inputmode="decimal" value="${N(cc.jurosRot, 2)}" onchange="A.setCartao('jurosRot',this.value)"></label><label>Juros parcelamento da fatura (% a.m.)<input inputmode="decimal" value="${N(cc.jurosParc, 2)}" onchange="A.setCartao('jurosParc',this.value)"></label></div></div>
+    <div class="card"><h2>📏 Regras de ouro do cartão</h2><ol style="margin:0;padding-left:20px;line-height:1.7;font-size:14px">
+      <li><b>Pague sempre o valor total, até o vencimento</b> (dia ${cc.vencimento}). Débito automático do total elimina o risco.</li>
+      <li>Rotativo a ${N(cc.jurosRot, 2)}% a.m. é o "on-demand" mais caro que existe: centavos em aberto geram juros sobre o saldo.</li>
+      <li>Nunca parcele a fatura (${N(cc.jurosParc, 2)}% a.m. ≈ ${P((Math.pow(1 + cc.jurosParc/100, 12) - 1)*100)} ao ano).</li>
+      <li>Não parcele compras pequenas (política: abaixo de ${R(S.regras.parcelaMin)}). Parcela pequena vira "dívida invisível".</li>
+      <li>Antes de uma nova parcela, olhe a curva acima: ela vai somar em cima do que já existe.</li>
+      <li>Use os pontos/cashback, mas nunca gaste para ganhar pontos.</li></ol></div>
+  </div>`;
 };
 
 V.tarifas = () => {
@@ -802,6 +872,8 @@ V.governanca = () => {
     ${campo('estiloMax', 'Estilo de vida: máximo (% da renda)')}
     ${campo('poupancaMin', 'Poupança: mínimo (% da renda)')}
     ${campo('moradiaMax', 'Moradia: máximo (% da renda)')}
+    ${campo('parcelaMin', 'Não parcelar compras abaixo de (R$)')}
+    ${campo('parcelasMax', 'Parcelas do mês: máximo (% da renda)')}
   </div></div>
   <div class="card"><h2>Regras de categorização automática</h2><p class="muted" style="font-size:13.5px;margin-top:0">Se a descrição contém algum dos termos (separados por |), o gasto recebe a categoria. É o "tagging policy" da casa.</p>
   <div class="tw"><table><tr><th>Termos</th><th>Categoria</th><th></th></tr>${S.autoCat.map(([p, c], i) => `<tr><td style="font-family:ui-monospace,monospace;font-size:12.5px;word-break:break-word">${esc(p)}</td><td>${cat(c).icone} ${esc(cat(c).nome)}</td><td class="n"><button class="x" onclick="A.delAuto(${i})">✕</button></td></tr>`).join('')}</table></div>
@@ -881,7 +953,7 @@ V.config = () => `${head('Casa & Dados', 'Ferramentas & serviços: configure a c
   <div class="card"><h2>🗂️ Categorias</h2><div class="tw"><table><tr><th>Categoria</th><th>Tipo</th><th>Grupo (50/30/20)</th></tr>${S.categorias.map(c => `<tr><td>${c.icone} ${esc(c.nome)}</td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','tipo',this.value)"><option value="fixo" ${c.tipo === 'fixo' ? 'selected' : ''}>Fixo</option><option value="variavel" ${c.tipo === 'variavel' ? 'selected' : ''}>Variável</option></select></td><td><select style="width:auto" onchange="A.setCatCfg('${c.id}','grupo',this.value)"><option value="essencial" ${c.grupo === 'essencial' ? 'selected' : ''}>Essencial</option><option value="estilo" ${c.grupo === 'estilo' ? 'selected' : ''}>Estilo de vida</option></select></td></tr>`).join('')}</table></div>
   <div class="row" style="margin-top:10px"><input id="nc_ic" placeholder="🎸" style="width:60px"><input id="nc_nome" placeholder="Nova categoria" style="flex:1;min-width:140px"><button onclick="A.addCat()">Adicionar</button></div></div>
   <div class="card"><h2>💾 Dados</h2><p class="muted" style="font-size:13.5px;margin-top:0">Os dados ficam apenas neste navegador. Faça backup periodicamente — e use o arquivo para levar os dados a outro aparelho.</p>
-  <div class="row"><button class="p" onclick="A.exportar()">⬇ Backup (JSON)</button><button onclick="A.colarBackup()">⬆ Restaurar backup</button><button onclick="A.csvTudo()">⬇ Todos os gastos (CSV)</button><button onclick="A.exemplo()">Carregar exemplo</button><button onclick="A.tema()">🌓 Tema</button><span class="sp"></span><button style="color:var(--bad)" onclick="A.zerar()">Apagar tudo</button></div></div>`;
+  <div class="row"><button class="p" onclick="A.exportar()">⬇ Backup (JSON)</button><button onclick="A.colarBackup()">⬆ Restaurar backup</button><button onclick="A.csvTudo()">⬇ Todos os gastos (CSV)</button>${PRESET ? `<button onclick="A.carregarPreset()">📄 ${esc(PRESET.presetNome || 'Dados reais')}</button>` : ''}<button onclick="A.exemplo()">Carregar exemplo</button><button onclick="A.tema()">🌓 Tema</button><span class="sp"></span><button style="color:var(--bad)" onclick="A.zerar()">Apagar tudo</button></div></div>`;
 
 /* ====================== Ações ====================== */
 function autoCategoria(desc){
@@ -1087,6 +1159,17 @@ const A = {
     const r = num('w_renda'); if (r) S.moradores.forEach(m => m.renda = Math.round(r / S.moradores.length * 100)/100);
     S.onboarded = true; save(); $('#dlg').close(); go('lancamentos'); render(); toast('Pronto! Lance ou importe seus primeiros gastos.');
   },
+  async carregarPreset(){
+    if (S.transacoes.length && !S.transacoes.every(t => t.fonte === 'exemplo') && !await ask('Dados reais', 'Substituir os dados atuais pelos dados embutidos nesta página?', {ok:'Substituir', perigo:true})) return;
+    S = migrar(PRESET); save(); MES = [...new Set(S.transacoes.map(t => ymOf(t.data)))].sort().pop() || HOJE_YM; go('painel'); render(); toast('Dados carregados'); },
+  addParcela(){ const v = num('pc_val'), n = Math.round(num('pc_n')); if (!val('pc_nome') || !(v > 0) || !(n >= 1)) return toast('Informe descrição, valor da parcela e nº de parcelas restantes');
+    const ini = val('pc_ini') || addM(MES, 1);
+    S.planejados.push({id:uid(), tipo:'parcela', nome:val('pc_nome'), valor:v, cat:val('pc_cat'), inicio:ini, fim:addM(ini, n - 1)}); save(); render(); toast('Compromisso incluído na previsão'); },
+  setCartao(k, v){ S.cartao[k] = k === 'nome' ? v : numIn(v); save(); render(); },
+  simRot(){ const v = num('rt_v'), j = (S.cartao.jurosRot || 0)/100;
+    const iof = v * 0.0038 + v * 0.000082 * 30;
+    const m1 = v * j + iof, m12 = v * (Math.pow(1 + j, 12) - 1);
+    $('#rtOut').innerHTML = `<div class="grid g2"><div class="kpi"><div class="l">Custo em 1 mês</div><div class="v bad">${R(m1)}</div><div class="d">juros ${N(S.cartao.jurosRot, 2)}% + IOF</div></div><div class="kpi"><div class="l">Se rolar 12 meses</div><div class="v bad">${R0(m12)}</div><div class="d">a dívida vira ${R0(v + m12)}</div></div></div>`; },
   async exemplo(){
     if (S.transacoes.length && !await ask('Dados de exemplo', 'Substituir seus dados pelos dados de exemplo?', {ok:'Substituir', perigo:true})) return;
     S = exemplo(); save(); MES = HOJE_YM; go('painel'); render(); toast('Dados de exemplo carregados');
